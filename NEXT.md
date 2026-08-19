@@ -8,8 +8,9 @@ Estado del repositorio y siguiente paso. Se actualiza al final de cada sesión.
 
 **Fecha:** 2026-08-19
 **Última sesión:** Fase 0 — higiene y baja de la visualización anterior
-**Estado del repo:** desplegable, y **desplegado**. Un `index.html` estático sin build
-ni dependencias, sirviendo en producción. Local todavía: falta el primer push.
+**Estado del repo:** desplegable, desplegado y publicado.
+`git@github.com:SantiagoGelvez/santiagogelvezcom.git` · rama `main` · público.
+Producción sirve un `index.html` estático sin build ni dependencias.
 **Fase del proyecto:** 0 de 7 completada. Siguiente: fase 1a (fundaciones).
 
 ```
@@ -83,18 +84,15 @@ pero apunta igual. Registrado como actualización dentro del ADR-0005.
 
 ## Pendientes para mí (Santiago)
 
-**Listo para el primer push.** El repositorio quedó saneado para ser público (ADR-0013):
-`SPEC.md`, `CLAUDE.md` y `DECISIONS.md` describen qué construir y por qué, sin
-posicionamiento personal sobre la situación laboral. Nada bloquea.
+**Nada bloqueante.** El repositorio quedó saneado para ser público (ADR-0013) y ya está
+publicado, con SSH configurado y `origin main` como destino por defecto. De aquí en
+adelante basta `git push`.
 
-1. **Crear el repositorio remoto y hacer push.**
-   `gh repo create santiagogelvezcom --public --source=. --push`
+Se necesitan más adelante, no ahora:
 
-**No bloqueantes, se necesitan más adelante:**
-
-2. **Decidir qué dice el sitio sobre disponibilidad**, si es que dice algo. Es una
+1. **Decidir qué dice el sitio sobre disponibilidad**, si es que dice algo. Es una
    decisión deliberada, no de copy. Se necesita en la fase 6.
-3. **Fecha objetivo de publicación**, si hay algo que la ancle. Cambia qué se recorta.
+2. **Fecha objetivo de publicación**, si hay algo que la ancle. Cambia qué se recorta.
 
 No bloqueantes, se necesitan más adelante:
 
