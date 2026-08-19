@@ -7,6 +7,64 @@ Orden cronológico inverso — lo más reciente arriba.
 
 ---
 
+## ADR-0015 — El `hreflang` se emite desde la clave de traducción, no desde la ruta
+
+**Fecha:** 2026-08-19
+
+**Decisión.** El `hreflang` de cada página se construye desde la clave de traducción
+de la pieza, que solo conoce los idiomas en que la pieza existe de verdad. Se descarta
+la opción `i18n` de `@astrojs/sitemap`, y `x-default` apunta a la URL en español de la
+pieza, no a la raíz `/`.
+
+**Alternativas consideradas.** Usar `sitemap({ i18n: … })`, que es la forma que la
+integración documenta y que resuelve el caso normal en tres líneas. Declarar
+`x-default` hacia `/`, que es lo que dice literalmente SPEC §8.
+
+**Por qué.** La opción `i18n` del sitemap asume que la traducción de una ruta es la
+misma ruta con otro prefijo de idioma. Aquí los slugs son traducidos (ADR-0014), así que
+emitiría `hreflang` desde `/es/sobre-mi/` hacia `/en/sobre-mi/`, que no existe — el error
+exacto que SPEC §8 y §10 prohíben, y que Search Console reporta. Lo mismo con
+`x-default` hacia `/`: esa URL responde 301, y declarar `hreflang` hacia una URL que
+redirige es un defecto reportable. La intención de §8 es "el idioma por defecto es el
+español", y apuntar a la página en español la cumple sin crear el defecto.
+
+**Qué se sacrificó.** El `hreflang` deja de ser gratis: es código propio en la plantilla
+y hay que mantenerlo. Y el `sitemap.xml` sale sin anotaciones de idioma —los buscadores
+las leen igual desde el `<head>`, pero es una señal menos en el archivo. A cambio, la
+regla "solo entre pares que existen" queda garantizada por construcción y no por
+disciplina: la pieza sin traducción no puede declarar un par que no tiene.
+
+---
+
+## ADR-0014 — Un archivo por ruta, con un registro de claves de traducción
+
+**Fecha:** 2026-08-19
+
+**Decisión.** Cada una de las 20 rutas del mapa del sitio es un archivo propio bajo
+`src/pages/es/…` y `src/pages/en/…`. Los segmentos traducidos viven en un registro
+único, `src/i18n/routes.ts`, que mapea clave de traducción → segmento por idioma; las
+páginas los consumen con `path(locale, section, slug?)` y nunca escriben una URL a mano.
+
+**Alternativas consideradas.** Una ruta catch-all `src/pages/[...path].astro` que genere
+las 20 rutas desde el registro con `getStaticPaths`. Sería una sola fuente de verdad, y
+agregar una sección costaría una línea.
+
+**Por qué.** Con slugs traducidos (`/es/sobre-mi/` ↔ `/en/about/`), el enrutamiento por
+locale de Astro no basta: el idioma no es lo único que cambia en la URL. Entre las dos
+formas de resolverlo, el archivo por ruta hace que el árbol de `src/pages/` se lea como
+el mapa del sitio de SPEC §5, y que cada plantilla se abra donde uno la busca. El
+catch-all cambia eso por un despacho por clave que hay que leer entero para saber qué
+renderiza qué, y son 10 secciones fijas: la fuente de verdad única compra poco cuando el
+conjunto casi no crece.
+
+**Qué se sacrificó.** El registro de rutas queda duplicado de forma implícita en el árbol
+de archivos: agregar una sección son dos archivos más una entrada, y nada obliga a que
+coincidan. Mitigación: `scripts/verify-routes.mjs` compara la lista esperada contra lo
+que el build produjo y falla si se desincronizan, así que el desfase se ve en el build y
+no en producción.
+
+---
+
 ## ADR-0013 — La documentación del repositorio describe el proyecto, no la situación laboral
 
 **Fecha:** 2026-08-19

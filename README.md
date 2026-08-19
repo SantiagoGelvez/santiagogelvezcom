@@ -27,7 +27,22 @@ CLAUDE.md          Reglas de trabajo e índice de documentación
 NEXT.md            Estado actual y siguiente paso
 DECISIONS.md       Registro de decisiones (ADR)
 docs/SPEC.md       Especificación: rutas, modelo de datos, plantillas, SEO
+src/i18n/          Claves de traducción → segmentos de ruta por idioma
+src/pages/{es,en}/ Un archivo por ruta; el árbol se lee como el mapa del sitio
 ```
+
+## Cómo correrlo
+
+```
+npm install
+npm run dev       # servidor de desarrollo
+npm run verify    # build + comprueba las rutas, hreflang, canonical y títulos
+npm run check     # TypeScript sobre los archivos .astro
+```
+
+`npm run verify` es el criterio de terminado escrito como código: si una ruta del mapa
+del sitio deja de existir, o un `hreflang` apunta a una página que no está, el comando
+falla. La alternativa era una lista en un documento que nadie vuelve a leer.
 
 ## Dos ideas que explican el resto
 
@@ -48,9 +63,11 @@ y verifica que los encabezados estén y que los campos privados no.
 consideradas y **qué se sacrificó** — sin ese campo un ADR es publicidad, no ingeniería.
 
 Algunas: [Astro sobre Eleventy](DECISIONS.md) aceptando deuda de actualización;
-[Workers sobre Pages](DECISIONS.md) porque el sitio necesita emitir códigos de estado
-que un estático no puede; [Playwright sobre Typst](DECISIONS.md) para no crear un
-segundo lugar donde viva el CV.
+[Workers sobre Pages](DECISIONS.md) por la hoja de ruta de Cloudflare —el argumento
+original, emitir códigos de estado que un estático no puede, quedó anulado y el ADR lo
+registra en vez de esconderlo—; [Playwright sobre Typst](DECISIONS.md) para no crear un
+segundo lugar donde viva el CV; [un archivo por ruta](DECISIONS.md) porque los slugs son
+traducidos y el árbol de archivos debe leerse como el mapa del sitio.
 
 ## Licencia
 
