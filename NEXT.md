@@ -45,6 +45,14 @@ carga automáticamente al abrir una sesión; su función es mandar a leer los ot
   de entrada automático, y la especificación movida de `PROMPT-CLAUDE-CODE-*.md` a
   `docs/SPEC.md` con `git mv`, preservando la historia. El nombre anterior hacía
   parecer desechable un documento de requisitos.
+- **`docs/SPEC.md` reconciliado con las decisiones de fase 0.** La versión original
+  seguía conteniendo las contradicciones que el análisis encontró, y una sesión futura
+  las habría construido: el 410 en la raíz, dos PDFs en vez de cuatro, el teléfono en
+  el pipeline de build. Corregidas las secciones 0, 4, 6, 7, 10, 11, 12, 15 y 16, cada
+  una con puntero a su ADR. Intactas las secciones 5, 9, 13 y 14. La §16 ya no dispara
+  otra fase 0 en cada sesión nueva.
+- Dos ADR nuevos que faltaban: ADR-0011 (conteo de PDFs) y ADR-0012 (`noindex` en
+  categorías delgadas). Total: 12.
 
 ---
 

@@ -7,6 +7,53 @@ Orden cronológico inverso — lo más reciente arriba.
 
 ---
 
+## ADR-0012 — `noindex` en las categorías del blog con menos de 3 posts
+
+**Fecha:** 2026-08-19
+
+**Decisión.** Las páginas de categoría se construyen desde el día uno, pero emiten
+`noindex` mientras la categoría tenga menos de 3 posts. La regla se evalúa en build.
+
+**Alternativas consideradas.** No crear las rutas hasta que haya contenido, lo que
+obligaría a cambiar la estructura de navegación después. Indexarlas desde el inicio.
+
+**Por qué.** Tres categorías fijas por dos idiomas son seis páginas que al lanzar nacen
+vacías o con un solo post. Google las trata como contenido delgado o *soft 404*, y eso
+afecta la percepción de calidad de un dominio cuya autoridad se está construyendo desde
+cero. Poner el umbral en el código y no en la memoria evita que dentro de un año nadie
+recuerde por qué unas categorías se indexan y otras no.
+
+**Qué se sacrificó.** Algunas páginas legítimas tardan más en aparecer en búsquedas.
+A una publicación al mes, el umbral de 3 posts puede tardar un trimestre en cruzarse.
+
+---
+
+## ADR-0011 — Cuatro PDFs generados, dos desplegados
+
+**Fecha:** 2026-08-19
+
+**Decisión.** El pipeline genera cuatro PDFs de la variante `cv-datos`: público y
+completo, en español e inglés. Solo los dos públicos se despliegan y se enlazan. La
+variante `cv-itsm` queda registrada en `variantes_cv[]` pero no se genera hasta que se
+necesite.
+
+**Alternativas consideradas.** Dos PDFs (solo los públicos), dejando el completo como
+un documento manual fuera del sistema. Generar las cuatro variantes de las dos versiones
+de CV desde v1, que serían ocho.
+
+**Por qué.** La especificación original tenía tres ejes solapados sin reconciliar
+—variante × privacidad × idioma— que producían dos, cuatro u ocho PDFs según qué
+párrafo se leyera. Cuatro es el mínimo que satisface las reglas reales: hay dos idiomas
+y hay dos niveles de privacidad, y ambos son requisitos. Una vez el pipeline existe,
+cada variante adicional cuesta minutos, así que no vale la pena optimizar el conteo
+hacia abajo; lo que sí importa es que solo dos salgan al mundo.
+
+**Qué se sacrificó.** El build produce artefactos que nunca se publican, lo que puede
+confundir a quien mire el directorio de salida sin contexto. Se compensa con la
+convención de nombres y con `.gitignore`.
+
+---
+
 ## ADR-0010 — Cuatro archivos, cuatro trabajos: cómo sobrevive el contexto entre sesiones
 
 **Fecha:** 2026-08-19

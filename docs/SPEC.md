@@ -1,15 +1,20 @@
 # Proyecto: sitio personal santiagogelvez.com
 
-Vas a construir mi sitio personal desde cero. Este documento es la especificación completa: contexto, decisiones ya tomadas, restricciones y criterios de aceptación. Léelo entero antes de proponer nada.
+Especificación completa: contexto, decisiones tomadas, restricciones y criterios de aceptación.
+
+> **Estado del documento.** La fase 0 (análisis y plan) ya se ejecutó el 2026-08-19. Las contradicciones que tenía la versión original están resueltas e incorporadas aquí; cada punto corregido lleva un puntero al ADR correspondiente en `DECISIONS.md`, que es donde vive el razonamiento completo.
+>
+> **Regla de desempate:** si este documento y un ADR se contradicen, gana el ADR más reciente y hay que actualizar este archivo (ADR-0010).
+>
+> **Para saber en qué punto va el trabajo, este no es el archivo.** Es `NEXT.md`.
 
 ---
 
 ## 0. Cómo quiero que trabajes
 
-- **No escribas código en tu primera respuesta.** Fase 0 es: leer esto, señalar contradicciones o riesgos, hacerme las preguntas que falten, y proponer un plan de fases con estimación de esfuerzo.
 - **Incrementos pequeños y verificables.** Nada de generar el sitio completo de un tirón. Cada paso debe poder correrse y verse.
 - **Confírmame los cambios estructurales antes de hacerlos** (framework, esquema de datos, estructura de rutas). Los cambios cosméticos no necesitan confirmación.
-- **Mantén `DECISIONS.md` en la raíz del repo.** Formato ADR ligero, una entrada por decisión: fecha, decisión, alternativas consideradas, por qué, qué se sacrificó. Empieza volcando ahí las decisiones de este documento.
+- **Mantén `DECISIONS.md` en la raíz del repo.** Formato ADR ligero, una entrada por decisión: fecha, decisión, alternativas consideradas, por qué, qué se sacrificó. Las decisiones de este documento ya están volcadas ahí.
 - **Mantén `NEXT.md`.** Al final de cada sesión: qué quedó hecho, qué sigue, y en qué estado está el repo. Trabajo en sesiones de ~2 horas separadas por una semana; sin esto pierdo la mitad del tiempo recordando dónde iba.
 - **Deja el repo desplegable al final de cada sesión.** Nunca a mitad de una refactorización.
 - **Si algo de este plan te parece un error, dímelo.** No quiero obediencia, quiero criterio. Tengo fondo técnico: no simplifiques las explicaciones.
@@ -61,16 +66,16 @@ El home le habla al reclutador LATAM. No intentes que le hable a las tres a la v
 
 **Decisiones tomadas:**
 
-- **Sitio 100% estático.** Sin servidor, sin base de datos, sin runtime que mantener.
+- **Sitio estático,** con una excepción acotada. Sin base de datos y sin CMS. La excepción es un handler mínimo para emitir códigos de estado que un estático no puede (410 en rutas retiradas), y es lo que decidió el hosting. Ver ADR-0005.
 - **Contenido en archivos versionados en git.** Nada de CMS.
-- **Hosting: Cloudflare** (Pages o Workers con assets estáticos — verifica cuál es la ruta recomendada hoy, Cloudflare está consolidando Pages dentro de Workers). Gratis, ancho de banda no medido, sin cláusula de uso no comercial.
-- **Dominio: registrado en Namecheap.** Se delegan nameservers a Cloudflare. **No tocar los registros MX**: el correo del dominio corre en Google Workspace y no puede caerse.
+- **Hosting: Cloudflare Workers con assets estáticos** (no Pages). Cloudflare recomienda Workers para proyectos nuevos y concentra ahí todo el desarrollo; y es el único de los dos que emite el 410 sin pasos intermedios. Gratis, ancho de banda no medido, sin cláusula de uso no comercial. Ver ADR-0005.
+- **Dominio: registrado en Namecheap.** **Los nameservers ya están delegados a Cloudflare** (verificado 2026-08-19: `melina/dale.ns.cloudflare.com`) y el MX de Google Workspace está intacto (`1 smtp.google.com`). No queda migración de DNS pendiente, solo repuntar el origen desde S3. **No tocar los registros MX**: el correo no puede caerse. Verificar con `dig +short MX santiagogelvez.com` después de cualquier cambio de origen.
 - **Deploy automático desde git push.** Con previews por rama.
-- **Framework propuesto: Astro.** Razones: contenido en Markdown/MDX como ciudadano de primera clase, i18n con rutas incluido, salida estática por defecto, JavaScript mínimo enviado al cliente, y bajo costo de mantenimiento a largo plazo. **Si tienes un argumento fuerte para otra cosa, plantéalo en fase 0**; después de fase 0 la decisión queda cerrada.
+- **Framework: Astro.** Decisión cerrada, ver ADR-0002. El argumento decisivo no es el soporte de Markdown sino §6: la validación de los archivos de data por esquema en tiempo de build es un requisito nombrado, y Astro la ofrece como primitiva (Content Layer + esquemas Zod) en lugar de pegamento propio. TypeScript estricto, integraciones limitadas a `mdx` y `sitemap`, versiones fijas. El precio aceptado es deuda de actualización: revisión trimestral anotada en `NEXT.md`.
 
 **Descartados y por qué** (regístralo en `DECISIONS.md`):
 
-- **AWS S3 + CloudFront.** Mi free tier terminó y quiero conservar esa cuenta limpia para proyectos de datos, que es donde el gasto compra aprendizaje relevante. Además no da build automático sin montar CI aparte.
+- **AWS S3 + CloudFront.** No es una alternativa hipotética: **es el hosting actual**, y salir de él es lo que deja limpia la cuenta AWS. Mi free tier terminó y quiero conservar esa cuenta para proyectos de datos, que es donde el gasto compra aprendizaje relevante. Además no da build automático sin montar CI aparte.
 - **Vercel.** El plan Hobby está restringido a uso personal no comercial. Si algún día uso el sitio para captar clientes de consultoría, entro en zona gris.
 - **Base de datos (Supabase u otra).** No hay nada que guardar en runtime. Además el tier gratuito de Supabase pausa proyectos por inactividad, que es exactamente el peor comportamiento para un sitio personal de tráfico irregular.
 
@@ -108,7 +113,18 @@ Espejo completo en `/en/` con slugs de sección traducidos (`/en/about/`, `/en/p
 - **Contenido** (posts, casos de estudio): Markdown/MDX, un archivo por pieza.
 - **El CV no es un documento: es una vista sobre la data.**
 
-Propón tú el formato concreto de los archivos de data y valídalo con esquemas en tiempo de build. Un error de tipeo en una fecha no debe llegar a producción.
+Propón tú el formato concreto de los archivos de data y valídalo con esquemas en tiempo de build. Un error de tipeo en una fecha no debe llegar a producción. Este es el requisito que decidió el framework (ADR-0002): se implementa con Content Layer y esquemas Zod, no con validación artesanal.
+
+### Dos ejes de filtrado, no uno
+
+El modelo tiene **dos filtros distintos que no se pueden implementar como uno solo**, o el primer PDF que se genere va a filtrar mal:
+
+| Eje | Granularidad | Pregunta que responde |
+|---|---|---|
+| `visible_en[]` | **registro** | ¿Este empleo aparece en esta salida? |
+| Marca de campo público | **campo** | ¿Este dato puede salir del computador? |
+
+Un registro puede estar en `visible_en: [sitio, cv-datos]` y aun así tener campos que nunca llegan a una salida pública. Ver §7 y ADR-0006.
 
 ### Entidades
 
@@ -139,15 +155,32 @@ Propón tú el formato concreto de los archivos de data y valídalo con esquemas
 - **Data → campos bilingües en línea.** Un cargo o un logro son textos cortos que siempre existen en ambos idiomas; viven juntos en el mismo registro.
 - **Contenido → un archivo por idioma.** Los posts no tienen paridad (ver §8), así que forzar un formato pareado dejaría huecos vacíos.
 
+**Corolario sobre `clave_traduccion`.** §8 la exige para "cada pieza", pero solo hace falta construirla una vez, para los posts: como son un archivo por idioma, necesitan una clave explícita que los empareje. Los proyectos ya son bilingües en línea, así que **el `id` del registro es su propia clave** y no lleva campo aparte. Un mecanismo, no dos.
+
 ---
 
 ## 7. CV: tres salidas desde una fuente
 
 1. **Página `/es/cv/` y `/en/cv/`** — versión para humanos: enlaces vivos a proyectos, repos y credenciales. Indexable. Cuando alguien busque mi nombre, esta página debe salir.
 2. **PDF público** — descargable desde el sitio. Sin teléfono. Es el que cualquiera puede bajar.
-3. **PDF completo** — con teléfono, para cuando aplico directo. Generado por el mismo pipeline pero **no enlazado desde el sitio ni incluido en el sitemap**.
+3. **PDF completo** — con teléfono, para cuando aplico directo.
 
-Cada campo del modelo lleva marca de si es público; el PDF público omite lo que no lo sea.
+Cada campo del modelo lleva marca de si es público; el PDF público omite lo que no lo sea. Ese filtro es por campo y es distinto de `visible_en[]`, que es por registro (§6).
+
+### Cuántos PDFs, y dónde vive cada uno
+
+**Cuatro se generan, dos se despliegan.** Ver ADR-0011.
+
+| Variante | Idioma | ¿Dónde se genera? | ¿Se despliega? |
+|---|---|---|---|
+| `cv-datos` público | es | en build | Sí, enlazado |
+| `cv-datos` público | en | en build | Sí, enlazado |
+| `cv-datos` completo | es | **solo en local** | **No** |
+| `cv-datos` completo | en | **solo en local** | **No** |
+
+`cv-itsm` queda registrado en `variantes_cv[]` pero no se genera hasta que se necesite: una vez existe el pipeline, la variante extra cuesta minutos.
+
+**El PDF completo nunca entra al directorio de build desplegado.** La idea original —generarlo en build y protegerlo dejándolo sin enlazar y fuera del sitemap— es seguridad por oscuridad: el archivo se sirve igual a quien adivine la ruta o reciba el enlace reenviado. En su lugar, el teléfono vive en un archivo ignorado por git y el PDF completo se produce con un comando local (`npm run cv:full`) cuya salida está en `.gitignore`. Mismo pipeline, mismo origen de datos, distinto disparador. La regla se vuelve imposible de violar por construcción en vez de depender de disciplina. Ver ADR-0006.
 
 ### Reglas del PDF (obligatorias)
 
@@ -162,7 +195,15 @@ El PDF va directo a sistemas ATS. Diseña para el parser, no para el ojo:
 - Fuentes embebidas y estándar.
 - Nombre de archivo con convención fija y legible — el reclutador lo ve.
 - Un PDF por idioma.
-- Generación en tiempo de build, versionada, con fecha de actualización visible.
+- **Fecha de actualización visible, derivada del `git log` de los archivos de data, no de la fecha de build.** Si se toma del build, el CV se ve "actualizado" cada vez que se publica un post sin haberlo tocado.
+
+### Cómo se generan
+
+**Imprimiendo la propia ruta `/cv/` con un navegador headless (Playwright)**, no con una segunda cadena de herramientas. Typst o LaTeX darían mejor control tipográfico, pero crean un segundo lugar donde vive el CV — exactamente lo que §6 prohíbe. Ver ADR-0007.
+
+Eso obliga a una **hoja de estilos de impresión, que no es opcional por dos razones**: alimenta el pipeline de PDF, y sin ella un reclutador que haga Ctrl+P sobre `/es/cv/` imprime el modo oscuro. Se paga una vez y sirve dos veces.
+
+**La prueba de compatibilidad ATS es un script automatizado, no una revisión a ojo.** Extrae el texto del PDF (`pdftotext`) y verifica que aparezcan los encabezados de sección estándar y que **el teléfono no aparezca en las variantes públicas**. Corre en CI.
 
 ### El titular
 
@@ -262,6 +303,8 @@ Dos niveles: tarjeta en el índice (título, una línea, stack, estado) y págin
 - **JSON-LD:** `Person` en el home, con `sameAs` hacia GitHub y LinkedIn — es lo que le permite a Google entender que las tres cosas son la misma persona, y eso importa mucho cuando la marca es mi nombre. `BlogPosting` en los posts. `BreadcrumbList` donde aplique.
 - **Open Graph:** imagen generada en build a partir del título. Diseñar treinta imágenes a mano no va a pasar; una plantilla que se rellena sola, sí.
 - **Rendimiento como SEO:** fuentes servidas localmente, imágenes en formato moderno con dimensiones declaradas, JavaScript mínimo. Core Web Vitals en verde debe ser el estado por defecto, no un esfuerzo posterior.
+- **Fuentes autohospedadas, nunca desde el CDN de Google.** No es solo rendimiento: cargar `fonts.googleapis.com` transmite la IP de cada visitante a Google, lo que choca con §11. El sitio anterior lo hacía; el nuevo no.
+- **`noindex` en las páginas de categoría con menos de 3 posts.** Con 3 categorías fijas × 2 idiomas son 6 páginas que al lanzar nacen vacías o con un solo post, y Google las trata como contenido delgado o *soft 404*. La regla va en el código, evaluada en build, no en la memoria. Ver ADR-0012.
 - **Migración:** el sitio actual es una sola página sin autoridad acumulada. No hay legado que preservar más allá de una redirección 301 de la raíz a `/es/`.
 
 **Nota estratégica:** los posts de "X vs Y" tienen intención de búsqueda real. En inglés compito con Databricks, AWS e IBM y no voy a ganar. **En español el terreno está mucho menos saturado**, y por eso el español no es el idioma secundario del sitio: es donde realmente peleo por tráfico.
@@ -272,9 +315,13 @@ Dos niveles: tarjeta en el índice (título, una línea, stack, estado) y págin
 
 Esto es prioritario, no un checkbox.
 
-### Tarea previa urgente
+### Tarea previa urgente — ejecutada el 2026-08-19
 
-Hoy el dominio sirve una visualización de mi planilla semanal que publica mi rutina hora por hora, incluyendo cuándo estoy y cuándo no estoy en casa. **Se elimina por completo.** Pasos: retirar la página, responder **410** en esa ruta (le dice a Google que no existe y no va a volver, más limpio que un 404), y solicitar la eliminación de la URL en Search Console para acelerar la desindexación y limpiar la caché.
+El dominio servía una visualización que publicaba información personal de rutina. Se retiró del repositorio y se archivó fuera de él; la historia de git arranca limpia para no hacerla permanente. Ver ADR-0004.
+
+**Corrección respecto al plan original:** la visualización vivía en `/`, y §5 convierte esa misma ruta en la puerta del sitio nuevo. **No se puede responder 410 ahí.** Lo que aplica en la raíz es reemplazo de contenido, purga de caché y solicitud de remoción en Search Console; Google reindexa lo nuevo. El 410 solo aplica si la visualización tuvo URLs propias además de la raíz — pendiente de confirmar en Search Console (ver `NEXT.md`).
+
+Y un detalle operativo que se olvida: **borrar los archivos locales no borra los objetos del bucket.** Mientras `js/` y `css/` sigan en S3, el dato sigue siendo público y direccionable aunque la portada cambie.
 
 ### Qué nunca se publica
 
@@ -288,11 +335,15 @@ Nunca en texto plano — se cosecha en semanas. Usar un alias del dominio dedica
 
 Que **reenvíe y olvide**. No almacenar mensajes en ninguna parte. Datos que no guardo son datos que no tengo que proteger, declarar ni borrar cuando alguien lo pida. Usar un servicio de formularios que reenvíe por correo, sin backend propio.
 
+**Criterio de selección del proveedor: que no persista el mensaje.** No "que sea gratis y fácil". Varios servicios populares del tier gratuito sí guardan los envíos en su panel: cumplen "sin backend propio" e incumplen "no almacenar". Hay que verificarlo en su documentación al momento de implementar, no asumirlo. Y cualquier tercero ahí es un encargado del tratamiento que la política de datos debe nombrar por su nombre.
+
 ### Obligaciones legales
 
 - **Colombia, Ley 1581 de 2012:** al recolectar datos personales por formulario se requiere política de tratamiento de datos y autorización explícita. Checkbox junto al formulario y página `/privacidad/`.
 - **GDPR:** con versión en inglés van a llegar visitantes europeos.
 - **Forma barata de cumplir ambos:** recolectar lo mínimo, no usar cookies de rastreo, y elegir analítica sin cookies (Cloudflare Web Analytics). Eso además elimina la necesidad del banner de consentimiento.
+
+**La analítica es un entregable, no solo un argumento de cumplimiento.** Cloudflare Web Analytics se instala en la fase 7 y se declara en la página de privacidad: aunque no use cookies, sí envía datos de visita a Cloudflare y eso hay que decirlo.
 
 ### Terceros
 
@@ -308,12 +359,16 @@ Antes de enlazar públicamente cualquier repo: revisar que no haya claves, endpo
 
 **Dos casos de estudio y dos posts.** Menos que eso, el sitio se ve recién nacido.
 
-| Pieza | Estado |
-|---|---|
-| Caso de estudio: pipeline FIFA World Cup 2026 (Python, Airflow, dbt, Databricks, API-Football) | Por construir |
-| Caso de estudio: lakehouse con arquitectura medallion (PySpark, Delta Lake, Unity Catalog) | Proyecto hecho; falta narrarlo |
-| Post: ETL vs ELT | Por escribir |
-| Post: Warehouse vs Lake vs Lakehouse | Por escribir |
+| Pieza | Estado | Idiomas |
+|---|---|---|
+| Caso de estudio: lakehouse con arquitectura medallion (PySpark, Delta Lake, Unity Catalog) | Proyecto hecho; falta narrarlo | es + en |
+| Caso de estudio: pipeline FIFA World Cup 2026 (Python, Airflow, dbt, Databricks, API-Football) | El pipeline se construye aparte | es + en |
+| Post: ETL vs ELT | Por escribir | es |
+| Post: Warehouse vs Lake vs Lakehouse | Por escribir | es |
+
+**Los casos de estudio salen bilingües; los posts no.** Los posts son tráfico, y el español es donde hay terreno menos saturado. Los casos de estudio no son tráfico: son la prueba de competencia que lee un hiring manager. Un `/en/` con home y CV en inglés pero los casos en español queda hueco justo donde se juega la credibilidad. Ver ADR-0008.
+
+**El pipeline del Mundial no es trabajo de sitio.** Construirlo es un proyecto de datos de decenas de horas que corre en un carril separado; este proyecto solo lo **narra**. Empezar por el caso del lakehouse, que ya está construido, para probar las plantillas contra una pieza real.
 
 **Cruce obligatorio:** el post de ETL vs ELT cierra apuntando al caso de estudio del Mundial ("así lo resolví yo"), y el caso de estudio apunta al post. Ese cruce convierte piezas sueltas en un cuerpo de trabajo.
 
@@ -388,24 +443,24 @@ El sitio está listo para publicar cuando:
 
 1. Las diez rutas de §5 existen en español e inglés y ninguna da 404.
 2. El selector de idioma funciona en todas las páginas, incluyendo el caso de contenido sin traducción.
-3. Los dos casos de estudio y los dos posts están publicados, con el cruce entre ellos.
-4. `/es/cv/` y `/en/cv/` renderizan desde la data, y los dos PDFs se generan en build y pasan una prueba de extracción de texto.
-5. El PDF público no contiene teléfono; el completo no está enlazado ni en el sitemap.
-6. Sitemap, robots, canonical, `hreflang` y JSON-LD verificados.
-7. El formulario de contacto entrega correo y no almacena nada; la página de privacidad existe y está enlazada.
-8. La planilla semanal está eliminada, respondiendo 410, y solicitada su eliminación en Search Console.
-9. El dominio apunta a Cloudflare, con SSL activo y los MX de Workspace intactos y verificados.
-10. Core Web Vitals en verde en móvil.
-11. `DECISIONS.md` y `NEXT.md` al día.
+3. Los dos casos de estudio están publicados **en ambos idiomas** y los dos posts en español, con el cruce entre ellos.
+4. `/es/cv/` y `/en/cv/` renderizan desde la data. Los **dos PDFs públicos** se generan en build y pasan la prueba automatizada de extracción de texto; los dos completos se generan en local con el mismo pipeline.
+5. La prueba de extracción confirma que **el teléfono no aparece en ninguna variante pública**, y los PDFs completos no están en el directorio desplegado ni en el repositorio.
+6. La hoja de estilos de impresión existe: Ctrl+P sobre `/es/cv/` produce una página legible.
+7. Sitemap, robots, canonical, `hreflang` y JSON-LD verificados. Las categorías con menos de 3 posts salen con `noindex`.
+8. El formulario de contacto entrega correo y no almacena nada —verificado en la documentación del proveedor—; la página de privacidad existe, está enlazada y nombra al proveedor y a la analítica.
+9. La analítica sin cookies está instalada.
+10. La visualización anterior está eliminada del bucket (no solo del repo) y solicitada su remoción en Search Console. Si tuvo URLs propias además de la raíz, esas responden 410.
+11. ✅ *Cumplido desde antes:* el dominio apunta a Cloudflare, con SSL activo y los MX de Workspace intactos y verificados.
+12. Core Web Vitals en verde en móvil.
+13. `DECISIONS.md` y `NEXT.md` al día.
 
 ---
 
-## 16. Empieza aquí
+## 16. Dónde empieza cada sesión
 
-En tu primera respuesta, **no escribas código**. Dame:
+**No aquí.** Esta sección contenía las instrucciones de arranque de la fase 0, que se ejecutó el 2026-08-19: análisis de contradicciones, decisión de framework y plan por fases. Sus resultados están repartidos donde corresponde — las resoluciones en este documento, el razonamiento en `DECISIONS.md`, el plan en `NEXT.md`.
 
-1. Contradicciones, huecos o riesgos que veas en esta especificación.
-2. Tu recomendación de framework, con argumento — confirmando o rebatiendo Astro.
-3. Las preguntas que necesites resueltas antes de arrancar.
-4. Un plan por fases, con estimación de horas por fase, marcando cuáles toleran sesiones de dos horas y cuáles necesitan un bloque largo.
-5. Qué propones hacer en la primera sesión de trabajo.
+Cada sesión empieza leyendo **`NEXT.md`**.
+
+Lo único que sigue vigente de la fase 0 es una pregunta abierta que hay que responder antes de la fase 6: **si el sitio declara disponibilidad explícita**. §3 dice que el reclutador pregunta "¿está disponible?", pero ponerlo en una página indexada bajo mi nombre, estando empleado, es una decisión con consecuencias laborales y no de redacción.
