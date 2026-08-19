@@ -276,10 +276,11 @@ saca de `git log`. Por eso la historia del repositorio arranca limpia.
 **Qué se sacrificó.** El repositorio no conserva el trabajo previo. Está archivado
 fuera, recuperable, pero no versionado.
 
-**Pendiente.** Confirmar en Search Console si la visualización tuvo URLs propias además
-de la raíz. Si las tuvo, esas rutas responden 410. La raíz no puede responder 410
-porque es la puerta del sitio nuevo: ahí lo que aplica es reemplazo de contenido más
-purga de caché y solicitud de remoción.
+**Pendiente → resuelto el 2026-08-19.** Search Console está limpio: la visualización no
+tuvo URLs propias además de la raíz, así que no hay ninguna ruta que deba responder 410.
+La raíz tampoco podía, porque es la puerta del sitio nuevo; ahí lo que aplicó fue
+reemplazo de contenido, borrado de los objetos del bucket, purga de caché y solicitud de
+remoción. Verificado en vivo: los tres archivos anteriores responden 404.
 
 ---
 
