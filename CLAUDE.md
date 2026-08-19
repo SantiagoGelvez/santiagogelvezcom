@@ -2,11 +2,11 @@
 
 Sitio personal estático de Santiago Gelvez, Ingeniero de Datos.
 
-**Es un activo de búsqueda de empleo, no un experimento técnico.** Existe para
-desmontar una objeción concreta: la trayectoria Tigo → El Tiempo (Data Engineer) →
-Solvo (ITSM) se lee como "se salió del área". El sitio demuestra lo contrario con
-evidencia. Optimiza por salir a producción y por costo de mantenimiento bajo, nunca
-por sofisticación técnica.
+**Es un portafolio profesional, no un experimento técnico.** Su trabajo es demostrar
+criterio de ingeniería de datos con evidencia verificable: proyectos reales con su
+arquitectura, decisiones argumentadas con sus trade-offs, y escritura que muestra cómo
+se piensan los sistemas. Optimiza por salir a producción y por costo de mantenimiento
+bajo, nunca por sofisticación técnica.
 
 ## Antes de proponer nada, lee en este orden
 

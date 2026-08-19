@@ -7,6 +7,36 @@ Orden cronológico inverso — lo más reciente arriba.
 
 ---
 
+## ADR-0013 — La documentación del repositorio describe el proyecto, no la situación laboral
+
+**Fecha:** 2026-08-19
+
+**Decisión.** `SPEC.md`, `CLAUDE.md`, `DECISIONS.md` y `NEXT.md` describen qué se
+construye y por qué, sin declarar situación laboral, búsqueda activa de empleo, ni
+lecturas del propio historial como algo que haya que justificar. La trayectoria
+profesional se enuncia de forma factual —es información pública— pero el
+posicionamiento estratégico sale de los archivos versionados.
+
+**Alternativas consideradas.** Publicar la especificación completa, que era el
+documento más impresionante como pieza de portafolio. Dejarla fuera del repositorio
+por entero, que eliminaba el riesgo y también el valor.
+
+**Por qué.** El repositorio es público (ADR-0009) y va enlazado desde un sitio indexado
+bajo un nombre propio, así que su audiencia real incluye a cualquiera del entorno
+profesional actual. El valor de portafolio de la especificación está en las secciones
+técnicas —mapa de rutas, modelo de datos, reglas de ATS, dirección de diseño—, no en
+el párrafo de posicionamiento personal. Sanear ese párrafo conserva todo lo que
+demuestra criterio y elimina lo único que exponía. Es la misma regla de ADR-0009
+aplicada a un caso menos obvio: el repositorio registra qué se decidió y por qué, no
+la situación personal de quien lo decidió.
+
+**Qué se sacrificó.** El documento pierde el marco que explica por qué ciertas
+decisiones —el titular "Data Engineer", la insistencia en evidencia verificable— son
+como son. Ese razonamiento sigue disponible fuera del repositorio, pero quien lea solo
+el repositorio verá las decisiones sin su motivación original.
+
+---
+
 ## ADR-0012 — `noindex` en las categorías del blog con menos de 3 posts
 
 **Fecha:** 2026-08-19
@@ -281,7 +311,7 @@ correcta habría sido Eleventy.
 
 ---
 
-## ADR-0001 — El sitio es un activo de búsqueda de empleo
+## ADR-0001 — El sitio es un portafolio profesional, no un experimento técnico
 
 **Fecha:** 2026-08-19 (decisión previa, registrada aquí)
 

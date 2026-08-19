@@ -81,29 +81,18 @@ la recomendación de Cloudflare para proyectos nuevos sigue apuntando a Workers.
 
 ## Pendientes para mí (Santiago)
 
-**Antes del primer `git push` — irreversible después:**
+**Listo para el primer push.** El repositorio quedó saneado para ser público (ADR-0013):
+`SPEC.md`, `CLAUDE.md` y `DECISIONS.md` describen qué construir y por qué, sin
+posicionamiento personal sobre la situación laboral. Nada bloquea.
 
-1. **¿`docs/SPEC.md` se publica o no?** Está versionado y el repositorio es público. El
-   documento dice "aplicando activamente a vacantes" y nombra el cargo actual en Solvo.
-   A favor: es material de portafolio genuinamente bueno, muestra cómo se especifica un
-   proyecto. En contra: lo lee cualquiera, incluido el empleador actual. Para dejarlo
-   fuera del repositorio conservándolo en disco:
-
-   ```bash
-   git rm --cached docs/SPEC.md
-   echo "docs/SPEC.md" >> .gitignore
-   git commit -m "Keep project spec out of the public repo"
-   ```
-
-2. **Crear el repositorio remoto y hacer push.** `gh repo create santiagogelvezcom
-   --public --source=. --push`
+1. **Crear el repositorio remoto y hacer push.**
+   `gh repo create santiagogelvezcom --public --source=. --push`
 
 **No bloqueantes, se necesitan más adelante:**
 
-3. **Decidir si el sitio declara disponibilidad explícita** ("abierto a oportunidades").
-   Es una decisión con consecuencias laborales, no de copy. Se necesita en la fase 6.
-4. **Fecha objetivo de publicación**, si hay una postulación o certificación que la
-   ancle. Cambia qué se recorta.
+2. **Decidir qué dice el sitio sobre disponibilidad**, si es que dice algo. Es una
+   decisión deliberada, no de copy. Se necesita en la fase 6.
+3. **Fecha objetivo de publicación**, si hay algo que la ancle. Cambia qué se recorta.
 
 No bloqueantes, se necesitan más adelante:
 

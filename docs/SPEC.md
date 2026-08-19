@@ -24,13 +24,13 @@ Especificación completa: contexto, decisiones tomadas, restricciones y criterio
 
 ## 1. Contexto
 
-**Quién soy.** Santiago Gelvez, ingeniero electrónico (UPTC), basado en Duitama, Boyacá, Colombia. Hoy soy ITSM Coordinator en Solvo. Antes fui Data Engineer en Editorial El Tiempo (ADF, Airflow, dbt, AWS) y antes de eso estuve en Tigo. Tengo fondo de desarrollo fullstack/backend, pipelines de datos y automatización de procesos.
+**Quién soy.** Santiago Gelvez, ingeniero electrónico (UPTC), basado en Duitama, Boyacá, Colombia. Experiencia en ingeniería de datos (ADF, Airflow, dbt, AWS), gestión de servicios de TI, desarrollo fullstack/backend y automatización de procesos.
 
-**Qué estoy haciendo.** Estoy en transición de vuelta a Data Engineering, con interés en el cruce de datos e IA. Estoy construyendo portafolio, preparando certificaciones (AWS DEA-C01, Databricks) y aplicando activamente a vacantes.
+**Foco actual.** Ingeniería de datos, con interés particular en el cruce de datos e IA. Certificaciones en curso: AWS DEA-C01 y Databricks.
 
-**Para qué sirve este sitio.** Es un activo de búsqueda de empleo, no un experimento técnico. Su trabajo es resolver una objeción específica antes de que el lector la formule: mi trayectoria es Tigo → El Tiempo (Data Engineer) → Solvo (ITSM). Un reclutador de datos lee eso como "se salió del área". El sitio existe para demostrar lo contrario con evidencia: proyectos reales, decisiones técnicas argumentadas, y escritura que muestra criterio.
+**Para qué sirve este sitio.** Es un portafolio profesional, no un experimento técnico. Su trabajo es demostrar criterio de ingeniería de datos con evidencia verificable: proyectos reales con su arquitectura, decisiones técnicas argumentadas con sus trade-offs, y escritura que muestra cómo pienso los sistemas. Un listado de tecnologías no demuestra nada; un caso de estudio que explica qué se sacrificó y por qué, sí.
 
-**El sitio es un medio para un fin.** No es un proyecto de aprendizaje frontend. Ya sé construir esto; construirlo no me enseña nada que aparezca en una vacante de datos. Optimiza por salir a producción y por costo de mantenimiento bajo, no por sofisticación.
+**El sitio es un medio para un fin.** No es un proyecto de aprendizaje frontend. Ya sé construir esto; construirlo no enseña nada que aparezca en una vacante de datos. Optimiza por salir a producción y por costo de mantenimiento bajo, no por sofisticación.
 
 ---
 
@@ -463,4 +463,4 @@ El sitio está listo para publicar cuando:
 
 Cada sesión empieza leyendo **`NEXT.md`**.
 
-Lo único que sigue vigente de la fase 0 es una pregunta abierta que hay que responder antes de la fase 6: **si el sitio declara disponibilidad explícita**. §3 dice que el reclutador pregunta "¿está disponible?", pero ponerlo en una página indexada bajo mi nombre, estando empleado, es una decisión con consecuencias laborales y no de redacción.
+Queda una pregunta abierta de la fase 0, que hay que responder antes de la fase 6: **qué dice el sitio sobre disponibilidad**, si es que dice algo. §3 la lista como una de las preguntas que trae el lector. Es una decisión deliberada, no de redacción, y se toma fuera de este documento.
