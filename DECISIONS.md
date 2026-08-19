@@ -7,6 +7,44 @@ Orden cronológico inverso — lo más reciente arriba.
 
 ---
 
+## ADR-0010 — Cuatro archivos, cuatro trabajos: cómo sobrevive el contexto entre sesiones
+
+**Fecha:** 2026-08-19
+
+**Decisión.** El contexto del proyecto se reparte en cuatro archivos con funciones que
+no se solapan:
+
+| Archivo | Responde | Vida útil |
+|---|---|---|
+| `CLAUDE.md` | Qué leer y bajo qué reglas trabajar | Estable; se carga solo |
+| `NEXT.md` | ¿En qué iba? | Se sobrescribe cada sesión |
+| `DECISIONS.md` | ¿Por qué está así? | Nunca se edita, solo se agrega |
+| `docs/SPEC.md` | ¿Qué hay que construir? | Cambia solo si cambia el alcance |
+
+La especificación se movió de `PROMPT-CLAUDE-CODE-santiagogelvez.md` a `docs/SPEC.md`
+con `git mv`, preservando la historia.
+
+**Alternativas consideradas.** Confiar en que `DECISIONS.md` y `NEXT.md` bastaran, y
+borrar el documento original. Concentrar todo en un solo archivo grande.
+
+**Por qué.** El trabajo ocurre en sesiones de ~2 h separadas por una semana o más, y
+cada sesión arranca sin memoria de la anterior. `CLAUDE.md` es el único archivo que se
+carga automáticamente al abrir el proyecto: sin él, los otros tres son archivos
+cualesquiera que nadie garantiza que se lean, y el contexto se reconstruye a mano cada
+vez. El error que esta decisión evita es más sutil: un ADR registra decisiones, no
+especificaciones. El mapa de rutas, el modelo de datos, las reglas del PDF para ATS o
+la lista de patrones de diseño explícitamente descartados no son decisiones y no caben
+en `DECISIONS.md`. Si se hubiera borrado el documento original, esa información se
+habría perdido y se habría reinventado con los valores por defecto — que es justamente
+lo que la sección de diseño prohíbe. El nombre viejo tampoco ayudaba: llamarlo "prompt"
+hacía parecer desechable un documento de requisitos.
+
+**Qué se sacrificó.** Cuatro archivos que mantener en lugar de uno, con riesgo de que
+se contradigan. Regla de desempate: ante un conflicto gana el ADR más reciente, y la
+spec se actualiza para reflejarlo.
+
+---
+
 ## ADR-0009 — El repositorio es público, y eso define dónde vive cada cosa
 
 **Fecha:** 2026-08-19

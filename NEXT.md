@@ -13,12 +13,19 @@ Estado del repositorio y siguiente paso. Se actualiza al final de cada sesión.
 
 ```
 santiagogelvezcom/
-├── PROMPT-CLAUDE-CODE-santiagogelvez.md   Especificación completa del proyecto
-├── DECISIONS.md                           9 ADR registrados
-├── NEXT.md                                Este archivo
-├── .gitignore                             Ya protege datos privados (ADR-0006)
-└── index.html                             Placeholder temporal
+├── CLAUDE.md          Se carga solo en cada sesión. Índice + reglas permanentes
+├── NEXT.md            Este archivo — dónde vamos
+├── DECISIONS.md       10 ADR registrados — por qué está así
+├── docs/
+│   └── SPEC.md        Especificación completa — qué construir
+├── .gitignore         Ya protege datos privados (ADR-0006)
+└── index.html         Placeholder temporal
 ```
+
+**Los cuatro archivos tienen trabajos distintos.** `CLAUDE.md` es el único que se
+carga automáticamente al abrir una sesión; su función es mandar a leer los otros tres.
+`NEXT.md` responde "¿en qué iba?", `DECISIONS.md` responde "¿por qué está así?", y
+`SPEC.md` responde "¿qué hay que construir?". Ver ADR-0010.
 
 ---
 
@@ -34,6 +41,10 @@ santiagogelvezcom/
 - Placeholder en `/`: nombre, rol, ciudad y enlaces. Sin fuentes de CDN, sin correo en
   texto plano, con foco de teclado visible y `prefers-reduced-motion` respetado.
 - `DECISIONS.md` sembrado con las decisiones del brief y las nuevas de fase 0.
+- Continuidad entre sesiones resuelta (ADR-0010): `CLAUDE.md` creado como único punto
+  de entrada automático, y la especificación movida de `PROMPT-CLAUDE-CODE-*.md` a
+  `docs/SPEC.md` con `git mv`, preservando la historia. El nombre anterior hacía
+  parecer desechable un documento de requisitos.
 
 ---
 
@@ -44,10 +55,31 @@ Bloqueantes — el placeholder no debe subirse sin el primero:
 1. **Verificar las dos URLs del placeholder.** En `index.html` hay un comentario
    `<!-- VERIFICAR -->` sobre los enlaces de GitHub y LinkedIn. Están escritos por
    inferencia, no confirmados. Corregir si no coinciden.
-2. **Subir el placeholder al bucket de S3** y purgar la caché de Cloudflare.
-3. **Search Console:** solicitar remoción de la URL y revisar el informe de cobertura
-   para saber si la visualización tuvo URLs propias además de la raíz. De eso depende
-   si hay que emitir 410 en alguna ruta (ADR-0004).
+2. **Borrar `js/` y `css/` del bucket de S3**, no solo reemplazar `index.html`. Borrar
+   los archivos locales no toca S3: mientras esos objetos existan, el archivo con los
+   datos de rutina sigue siendo público y direccionable. Este es el paso que importa.
+3. **Subir el placeholder** y purgar la caché de Cloudflare (Caching → Configuration →
+   Purge Everything).
+4. **Search Console:** solicitar remoción de la URL y revisar Indexing → Pages para
+   saber si la visualización tuvo URLs propias además de la raíz. De eso depende si hay
+   que emitir 410 en alguna ruta (ADR-0004).
+
+**Decisión pendiente antes del primer `git push`:**
+
+5. **¿`docs/SPEC.md` se publica o no?** Está versionado, y el repositorio es público.
+   El documento dice "aplicando activamente a vacantes" y nombra el cargo actual en
+   Solvo — el mismo problema de exposición que motivó la fase 0, con otro traje. A
+   favor de publicarlo: es material de portafolio genuinamente bueno, muestra cómo se
+   especifica un proyecto. En contra: lo lee cualquiera, incluido el empleador actual.
+   Nada ha salido todavía; el repositorio es local. Para dejarlo fuera:
+
+   ```bash
+   git rm --cached docs/SPEC.md
+   echo "docs/SPEC.md" >> .gitignore
+   git commit -m "Keep project spec out of the public repo"
+   ```
+
+   El archivo sigue en disco y se sigue leyendo en cada sesión; solo no sale a GitHub.
 
 No bloqueantes, se necesitan más adelante:
 
