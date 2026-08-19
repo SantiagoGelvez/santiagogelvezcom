@@ -1,0 +1,21 @@
+---
+import Base from '~/layouts/Base.astro';
+import PlaceholderNotice from '~/components/PlaceholderNotice.astro';
+import { path } from '~/i18n/routes';
+import { sectionLabels, pageDescriptions } from '~/i18n/ui';
+
+const locale = 'en' as const;
+const section = 'privacy' as const;
+---
+
+<Base
+  locale={locale}
+  section={section}
+  title={sectionLabels[section][locale]}
+  description={pageDescriptions[section][locale]}
+  canonical={path(locale, section)}
+  alternates={{ es: path('es', section), en: path('en', section) }}
+>
+  <h1>{sectionLabels[section][locale]}</h1>
+  <PlaceholderNotice locale={locale} />
+</Base>

@@ -1,0 +1,32 @@
+---
+import Base from '~/layouts/Base.astro';
+import PlaceholderNotice from '~/components/PlaceholderNotice.astro';
+import { path } from '~/i18n/routes';
+import { pageDescriptions } from '~/i18n/ui';
+import { projects, inLocale, alternatePaths } from '~/data/placeholders';
+
+export function getStaticPaths() {
+  return inLocale(projects, 'es').map(({ piece, slug }) => ({
+    params: { slug },
+    props: { piece },
+  }));
+}
+
+const locale = 'es' as const;
+const section = 'projects' as const;
+
+const { piece } = Astro.props;
+const slug = piece.slug[locale]!;
+---
+
+<Base
+  locale={locale}
+  section={section}
+  title={piece.title[locale]}
+  description={pageDescriptions[section][locale]}
+  canonical={path(locale, section, slug)}
+  alternates={alternatePaths(piece, section)}
+>
+  <h1>{piece.title[locale]}</h1>
+  <PlaceholderNotice locale={locale} />
+</Base>

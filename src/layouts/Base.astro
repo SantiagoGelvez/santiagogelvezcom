@@ -1,0 +1,173 @@
+---
+import { path, url, otherLocale, localeNames, locales, type Locale, type SectionKey } from '../i18n/routes';
+import { ui, sectionLabels, navSections } from '../i18n/ui';
+
+interface Props {
+  locale: Locale;
+  /** Sección a la que pertenece la página, para el estado activo del nav. */
+  section: SectionKey;
+  /** Título sin sufijo; la plantilla aplica el patrón `Título — Santiago Gelvez`. */
+  title: string;
+  /** Escrita a mano, 150-160 caracteres (SPEC §10). Nunca truncada del cuerpo. */
+  description: string;
+  /** Ruta canónica de esta página. */
+  canonical: string;
+  /**
+   * Rutas que existen de verdad para esta misma pieza, por idioma.
+   * `hreflang` solo se emite entre pares reales (SPEC §8).
+   */
+  alternates: Partial<Record<Locale, string>>;
+}
+
+const { locale, section, title, description, canonical, alternates } = Astro.props;
+
+const site = Astro.site!;
+const isHome = section === 'home';
+const fullTitle = isHome
+  ? `${ui.siteName[locale]} — ${ui.role[locale]}`
+  : `${title} — ${ui.siteName[locale]}`;
+
+const other = otherLocale(locale);
+const alternateHere = alternates[other];
+// Si la pieza no existe en el otro idioma, el selector nunca se desactiva ni
+// desaparece: lleva al índice del blog de ese idioma, con aviso (SPEC §8).
+const switchHref = alternateHere ?? path(other, 'blog');
+const switchIsFallback = alternateHere === undefined;
+
+// `x-default` apunta a la versión en español, que es el idioma por defecto.
+// No a `/`, que responde 301: declarar `hreflang` hacia una URL que redirige
+// es un error que Search Console reporta.
+const xDefault = alternates['es'];
+---
+<!doctype html>
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#0F1219" />
+    <link rel="canonical" href={new URL(canonical, site).href} />
+    {locales.map((l) => {
+      const href = alternates[l];
+      return href ? <link rel="alternate" hreflang={l} href={new URL(href, site).href} /> : null;
+    })}
+    {xDefault && <link rel="alternate" hreflang="x-default" href={new URL(xDefault, site).href} />}
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content={section === 'blog' ? 'article' : 'website'} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={new URL(canonical, site).href} />
+    <meta property="og:locale" content={locale === 'es' ? 'es_CO' : 'en_US'} />
+    {isHome && (
+      <script
+        is:inline
+        type="application/ld+json"
+        set:html={JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'Person',
+          // Mismo `@id` en `/es/` y `/en/`: son dos páginas que describen a la
+          // misma persona, no dos personas. Sin esto Google puede tratarlas como
+          // entidades distintas, que es justo lo contrario de lo que busca §10.
+          '@id': 'https://santiagogelvez.com/#santiago',
+          name: ui.siteName[locale],
+          jobTitle: ui.role[locale],
+          url: url(site, locale, 'home'),
+          address: { '@type': 'PostalAddress', addressLocality: 'Duitama', addressRegion: 'Boyacá', addressCountry: 'CO' },
+          sameAs: ['https://github.com/santiagogelvez', 'https://www.linkedin.com/in/santiagogelvez/'],
+        })}
+      />
+    )}
+  </head>
+
+  <body>
+    <a class="skip" href="#contenido">{ui.skipToContent[locale]}</a>
+
+    <header class="site">
+      <a class="brand" href={path(locale, 'home')}>{ui.siteName[locale]}</a>
+      <nav aria-label={locale === 'es' ? 'Principal' : 'Main'}>
+        <ul>
+          {navSections.map((key) => (
+            <li>
+              <a href={path(locale, key)} aria-current={key === section ? 'page' : undefined}>
+                {sectionLabels[key][locale]}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+      <a class="lang" href={switchHref} hreflang={other} lang={other} title={switchIsFallback ? ui.noTranslation[other] : undefined}>
+        {localeNames[other]}
+      </a>
+    </header>
+
+    <main id="contenido">
+      <slot />
+    </main>
+
+    <footer class="site">
+      <p>{ui.city[locale]}</p>
+      <p><a href={path(locale, 'privacy')}>{sectionLabels.privacy[locale]}</a></p>
+    </footer>
+
+    <style is:global>
+      /* Estilos mínimos y deliberadamente provisionales. El sistema de diseño es
+         la fase 2; esto solo evita que las rutas de relleno se vean rotas.
+         Fuentes del sistema: nada desde el CDN de Google (SPEC §10 y §11). */
+      :root {
+        --bg: #0f1219;
+        --fg: #eef0f4;
+        --muted: #9aa3b2;
+        --accent: #45c4b0;
+        --rule: #232833;
+        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        color: var(--fg);
+        font-family: var(--sans);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      a { color: var(--accent); text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+      .skip {
+        position: absolute;
+        left: -9999px;
+      }
+      .skip:focus { left: 1rem; top: 1rem; background: var(--bg); padding: .5rem 1rem; z-index: 1; }
+      header.site, footer.site {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 1rem 1.5rem;
+        padding: 1.25rem max(1.5rem, 6vw);
+        font-family: var(--mono);
+        font-size: .875rem;
+      }
+      header.site { border-bottom: 1px solid var(--rule); }
+      footer.site { border-top: 1px solid var(--rule); margin-top: auto; color: var(--muted); }
+      footer.site p { margin: 0; }
+      .brand { color: var(--fg); font-weight: 600; }
+      header.site nav ul {
+        list-style: none; display: flex; flex-wrap: wrap; gap: 1.25rem; margin: 0; padding: 0;
+      }
+      header.site nav a[aria-current="page"] { color: var(--fg); border-bottom: 1px solid var(--accent); }
+      .lang { margin-left: auto; }
+      main { width: 100%; max-width: 46rem; padding: 3rem max(1.5rem, 6vw); }
+      h1 { font-size: clamp(1.75rem, 5vw, 2.5rem); line-height: 1.15; letter-spacing: -.02em; margin: 0 0 1rem; font-weight: 600; }
+      .muted { color: var(--muted); }
+      .meta { font-family: var(--mono); font-size: .8125rem; color: var(--muted); }
+      ul.plain { list-style: none; padding: 0; }
+      ul.plain li { margin: .5rem 0; }
+    </style>
+  </body>
+</html>

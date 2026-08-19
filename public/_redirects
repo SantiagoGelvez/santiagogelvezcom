@@ -1,0 +1,9 @@
+# Redirecciones permanentes, servidas por Cloudflare.
+# Formato: <origen> <destino> <código>
+#
+# Los slugs son permanentes (SPEC §8). Si alguno cambia, la redirección se
+# registra aquí — nunca se rompe una URL publicada en silencio.
+
+# La raíz no detecta el idioma del navegador: siempre lleva al español, que es
+# el idioma por defecto y donde el sitio realmente pelea por tráfico (SPEC §10).
+/    /es/    301

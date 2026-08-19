@@ -1,0 +1,35 @@
+---
+import Base from '~/layouts/Base.astro';
+import PlaceholderNotice from '~/components/PlaceholderNotice.astro';
+import { path } from '~/i18n/routes';
+import { pageDescriptions } from '~/i18n/ui';
+import { topics, inLocale, alternatePaths } from '~/data/placeholders';
+
+export function getStaticPaths() {
+  return inLocale(topics, 'es').map(({ piece, slug }) => ({
+    params: { slug },
+    props: { piece },
+  }));
+}
+
+const locale = 'es' as const;
+const section = 'topic' as const;
+
+const { piece } = Astro.props;
+const slug = piece.slug[locale]!;
+
+// Categorías con menos de 3 posts salen con `noindex` (ADR-0012). La regla se
+// evalúa en build, no en la memoria; se conecta al conteo real en la fase 1b.
+---
+
+<Base
+  locale={locale}
+  section={section}
+  title={piece.title[locale]}
+  description={pageDescriptions[section][locale]}
+  canonical={path(locale, section, slug)}
+  alternates={alternatePaths(piece, section)}
+>
+  <h1>{piece.title[locale]}</h1>
+  <PlaceholderNotice locale={locale} />
+</Base>

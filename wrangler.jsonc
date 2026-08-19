@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "santiagogelvezcom",
+  "compatibility_date": "2026-08-19",
+
+  // Worker de solo assets: no hay `main`, así que no hay código de servidor que
+  // mantener. El sitio es estático sin excepciones (ADR-0005, actualización).
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page"
+  }
+}

@@ -1,0 +1,30 @@
+---
+import Base from '~/layouts/Base.astro';
+import PlaceholderNotice from '~/components/PlaceholderNotice.astro';
+import { path } from '~/i18n/routes';
+import { sectionLabels, pageDescriptions } from '~/i18n/ui';
+import { projects, inLocale } from '~/data/placeholders';
+
+const locale = 'en' as const;
+const section = 'projects' as const;
+
+const entries = inLocale(projects, locale);
+---
+
+<Base
+  locale={locale}
+  section={section}
+  title={sectionLabels[section][locale]}
+  description={pageDescriptions[section][locale]}
+  canonical={path(locale, section)}
+  alternates={{ es: path('es', section), en: path('en', section) }}
+>
+  <h1>{sectionLabels[section][locale]}</h1>
+  <PlaceholderNotice locale={locale} />
+
+  <ul class="plain">
+    {entries.map(({ piece, slug }) => (
+      <li><a href={path(locale, section, slug)}>{piece.title[locale]}</a></li>
+    ))}
+  </ul>
+</Base>

@@ -1,0 +1,41 @@
+---
+import Base from '~/layouts/Base.astro';
+import PlaceholderNotice from '~/components/PlaceholderNotice.astro';
+import { path, otherLocale } from '~/i18n/routes';
+import { ui, pageDescriptions } from '~/i18n/ui';
+import { posts, inLocale, alternatePaths } from '~/data/placeholders';
+
+export function getStaticPaths() {
+  return inLocale(posts, 'es').map(({ piece, slug }) => ({
+    params: { slug },
+    props: { piece },
+  }));
+}
+
+const locale = 'es' as const;
+const section = 'blog' as const;
+
+const { piece } = Astro.props;
+const slug = piece.slug[locale]!;
+
+// Si la pieza no está traducida, el aviso va **en el otro idioma** y al inicio,
+// para que quien no lee este idioma lo decida en dos segundos (SPEC §8).
+const other = otherLocale(locale);
+const onlyInThisLanguage = piece.slug[other] === null;
+---
+
+<Base
+  locale={locale}
+  section={section}
+  title={piece.title[locale]}
+  description={pageDescriptions[section][locale]}
+  canonical={path(locale, section, slug)}
+  alternates={alternatePaths(piece, section)}
+>
+  {onlyInThisLanguage && (
+    <p class="meta" lang={other}>{ui.noTranslation[other]}</p>
+  )}
+
+  <h1>{piece.title[locale]}</h1>
+  <PlaceholderNotice locale={locale} />
+</Base>

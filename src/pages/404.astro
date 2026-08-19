@@ -1,0 +1,40 @@
+---
+import { path, defaultLocale } from '~/i18n/routes';
+import { ui } from '~/i18n/ui';
+
+// Una sola página 404 para todo el sitio, en el idioma por defecto. Cloudflare la
+// sirve por `not_found_handling: "404-page"` (ver `wrangler.jsonc`), y en ese punto
+// no hay ruta de la que deducir el idioma con fiabilidad.
+const locale = defaultLocale;
+---
+
+<html lang={locale}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{ui.notFoundTitle[locale]} — {ui.siteName[locale]}</title>
+    <meta name="robots" content="noindex" />
+    <meta name="color-scheme" content="dark" />
+  </head>
+  <body>
+    <main>
+      <h1>{ui.notFoundTitle[locale]}</h1>
+      <p>{ui.notFoundBody[locale]}</p>
+      <p><a href={path(locale, 'home')}>{ui.siteName[locale]}</a></p>
+    </main>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        background: #0f1219;
+        color: #eef0f4;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        line-height: 1.6;
+      }
+      main { padding: 3rem max(1.5rem, 6vw); }
+      a { color: #45c4b0; }
+    </style>
+  </body>
+</html>
