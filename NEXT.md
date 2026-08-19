@@ -8,7 +8,8 @@ Estado del repositorio y siguiente paso. Se actualiza al final de cada sesión.
 
 **Fecha:** 2026-08-19
 **Última sesión:** Fase 0 — higiene y baja de la visualización anterior
-**Estado del repo:** desplegable. Un `index.html` estático sin build ni dependencias.
+**Estado del repo:** desplegable, y **desplegado**. Un `index.html` estático sin build
+ni dependencias, sirviendo en producción. Local todavía: falta el primer push.
 **Fase del proyecto:** 0 de 7 completada. Siguiente: fase 1a (fundaciones).
 
 ```
@@ -56,30 +57,37 @@ carga automáticamente al abrir una sesión; su función es mandar a leer los ot
 
 ---
 
-## Pendientes para mí (Santiago), antes de la siguiente sesión
+## Baja de la visualización anterior: completada y verificada
 
-Bloqueantes — el placeholder no debe subirse sin el primero:
+Verificado el 2026-08-19 contra el sitio en vivo:
 
-1. **Verificar las dos URLs del placeholder.** En `index.html` hay un comentario
-   `<!-- VERIFICAR -->` sobre los enlaces de GitHub y LinkedIn. Están escritos por
-   inferencia, no confirmados. Corregir si no coinciden.
-2. **Borrar `js/` y `css/` del bucket de S3**, no solo reemplazar `index.html`. Borrar
-   los archivos locales no toca S3: mientras esos objetos existan, el archivo con los
-   datos de rutina sigue siendo público y direccionable. Este es el paso que importa.
-3. **Subir el placeholder** y purgar la caché de Cloudflare (Caching → Configuration →
-   Purge Everything).
-4. **Search Console:** solicitar remoción de la URL y revisar Indexing → Pages para
-   saber si la visualización tuvo URLs propias además de la raíz. De eso depende si hay
-   que emitir 410 en alguna ruta (ADR-0004).
+```
+/js/data.js  /js/app.js  /css/styles.css   → 404   (objetos borrados del bucket)
+portada                                    → 0 coincidencias sensibles
+<title>                                    → Santiago Gelvez — Ingeniero de Datos
+dig +short MX santiagogelvez.com           → 1 smtp.google.com   (correo intacto)
+```
 
-**Decisión pendiente antes del primer `git push`:**
+Enlaces del placeholder verificados manualmente. GitHub responde 200; LinkedIn responde
+999 a peticiones automatizadas, que es su bloqueo anti-bots y no un enlace roto.
 
-5. **¿`docs/SPEC.md` se publica o no?** Está versionado, y el repositorio es público.
-   El documento dice "aplicando activamente a vacantes" y nombra el cargo actual en
-   Solvo — el mismo problema de exposición que motivó la fase 0, con otro traje. A
-   favor de publicarlo: es material de portafolio genuinamente bueno, muestra cómo se
-   especifica un proyecto. En contra: lo lee cualquiera, incluido el empleador actual.
-   Nada ha salido todavía; el repositorio es local. Para dejarlo fuera:
+**Pendiente de confirmar:** si Search Console reportó URLs propias de la visualización
+además de la raíz. Si las hubo, esas rutas necesitan un handler 410 en la fase 1
+(ADR-0004). Si no las hubo, el handler no se construye y la excepción al "sitio
+estático" desaparece — lo que reabriría la comparación entre Workers y Pages, aunque
+la recomendación de Cloudflare para proyectos nuevos sigue apuntando a Workers.
+
+---
+
+## Pendientes para mí (Santiago)
+
+**Antes del primer `git push` — irreversible después:**
+
+1. **¿`docs/SPEC.md` se publica o no?** Está versionado y el repositorio es público. El
+   documento dice "aplicando activamente a vacantes" y nombra el cargo actual en Solvo.
+   A favor: es material de portafolio genuinamente bueno, muestra cómo se especifica un
+   proyecto. En contra: lo lee cualquiera, incluido el empleador actual. Para dejarlo
+   fuera del repositorio conservándolo en disco:
 
    ```bash
    git rm --cached docs/SPEC.md
@@ -87,7 +95,15 @@ Bloqueantes — el placeholder no debe subirse sin el primero:
    git commit -m "Keep project spec out of the public repo"
    ```
 
-   El archivo sigue en disco y se sigue leyendo en cada sesión; solo no sale a GitHub.
+2. **Crear el repositorio remoto y hacer push.** `gh repo create santiagogelvezcom
+   --public --source=. --push`
+
+**No bloqueantes, se necesitan más adelante:**
+
+3. **Decidir si el sitio declara disponibilidad explícita** ("abierto a oportunidades").
+   Es una decisión con consecuencias laborales, no de copy. Se necesita en la fase 6.
+4. **Fecha objetivo de publicación**, si hay una postulación o certificación que la
+   ancle. Cambia qué se recorta.
 
 No bloqueantes, se necesitan más adelante:
 
