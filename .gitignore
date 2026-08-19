@@ -1,0 +1,30 @@
+# === Datos privados ===
+# El teléfono y cualquier campo no público viven aquí y NUNCA se versionan.
+# Ver DECISIONS.md (ADR-0006). El repo es público: un commit accidental
+# de estos archivos solo se deshace reescribiendo la historia.
+.env
+.env.*
+!.env.example
+src/data/private/
+*.private.yaml
+*.private.json
+
+# === Salidas del pipeline de CV ===
+# El PDF completo (con teléfono) se genera en local y no se despliega.
+/cv-out/
+*-completo.pdf
+*-full.pdf
+
+# === Build ===
+dist/
+.astro/
+node_modules/
+.wrangler/
+.dev.vars
+
+# === Entorno ===
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/

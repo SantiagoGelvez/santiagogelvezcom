@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Santiago Gelvez — Ingeniero de Datos</title>
+  <meta name="description"
+    content="Santiago Gelvez, Ingeniero de Datos en Duitama, Boyacá, Colombia. Sitio en construcción.">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0F1219">
+  <link rel="canonical" href="https://santiagogelvez.com/">
+
+  <style>
+    :root {
+      --bg: #0F1219;
+      --fg: #EEF0F4;
+      --muted: #9AA3B2;
+      --accent: #45C4B0;
+      --rule: #232833;
+      --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--sans);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+      width: 100%;
+      max-width: 34rem;
+      padding: 3rem 1.5rem;
+      margin-left: max(1.5rem, 8vw);
+    }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: .75rem;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 .75rem;
+    }
+
+    h1 {
+      font-size: clamp(1.75rem, 5vw, 2.5rem);
+      line-height: 1.15;
+      letter-spacing: -.02em;
+      margin: 0 0 .5rem;
+      font-weight: 600;
+    }
+
+    .role {
+      font-size: 1.125rem;
+      color: var(--muted);
+      margin: 0 0 2rem;
+    }
+
+    hr {
+      border: 0;
+      border-top: 1px solid var(--rule);
+      margin: 0 0 2rem;
+    }
+
+    .note {
+      color: var(--muted);
+      margin: 0 0 2rem;
+      max-width: 32rem;
+    }
+
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      font-family: var(--mono);
+      font-size: .875rem;
+    }
+
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid transparent;
+      padding-bottom: 2px;
+      transition: border-color .15s ease;
+    }
+
+    a:hover { border-bottom-color: var(--accent); }
+
+    a:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+      border-radius: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      a { transition: none; }
+    }
+  </style>
+</head>
+
+<body>
+  <main>
+    <p class="eyebrow">Duitama, Boyacá · Colombia</p>
+    <h1>Santiago Gelvez</h1>
+    <p class="role">Ingeniero de Datos</p>
+
+    <hr>
+
+    <p class="note">
+      Estoy reconstruyendo este sitio: proyectos, notas técnicas y hoja de vida.
+      Mientras tanto, el trabajo está en GitHub y LinkedIn.
+    </p>
+
+    <ul>
+      <!-- VERIFICAR estas dos URLs antes de subir. Ver NEXT.md. -->
+      <li><a href="https://github.com/santiagogelvez">GitHub</a></li>
+      <li><a href="https://www.linkedin.com/in/santiagogelvez/">LinkedIn</a></li>
+    </ul>
+  </main>
+</body>
+
+</html>
