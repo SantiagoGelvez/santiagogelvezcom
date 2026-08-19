@@ -234,6 +234,26 @@ mantenerla consciente.
 Cloudflare (`melina/dale.ns.cloudflare.com`) y el MX de Google Workspace está intacto
 (`1 smtp.google.com`). No hay migración de DNS pendiente; solo repuntar el origen.
 
+### Actualización — 2026-08-19, mismo día
+
+**El argumento decisivo de esta decisión ya no aplica.** Search Console confirmó que la
+visualización anterior no tuvo URLs propias además de la raíz. No hay rutas que retirar,
+no se construye el handler 410, y el sitio vuelve a ser estático sin excepciones — la
+promesa del §4 se recupera completa y el "qué se sacrificó" de arriba queda anulado.
+
+**La decisión se mantiene, apoyada en lo que queda:** Cloudflare recomienda Workers para
+proyectos nuevos y concentra ahí todo el desarrollo de features; Pages sigue soportado
+pero sin inversión nueva. Es un argumento más débil que el anterior —para un sitio de
+contenido puro, Pages sería defendible por simplicidad— pero apunta en la misma
+dirección y es el que sobrevive a largo plazo.
+
+Se anota como actualización y no como ADR nuevo porque la decisión no se revierte, solo
+cambia su fundamento. La regla de no editar aplica a reversiones.
+
+**Si esto se reabre alguna vez,** el criterio es: mientras el sitio no necesite emitir
+respuestas dinámicas, la diferencia entre Workers y Pages es de hoja de ruta del
+proveedor, no de capacidad.
+
 ---
 
 ## ADR-0004 — Se retira la visualización publicada en la raíz del dominio

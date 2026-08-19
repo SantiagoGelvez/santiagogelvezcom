@@ -71,11 +71,13 @@ dig +short MX santiagogelvez.com           → 1 smtp.google.com   (correo intac
 Enlaces del placeholder verificados manualmente. GitHub responde 200; LinkedIn responde
 999 a peticiones automatizadas, que es su bloqueo anti-bots y no un enlace roto.
 
-**Pendiente de confirmar:** si Search Console reportó URLs propias de la visualización
-además de la raíz. Si las hubo, esas rutas necesitan un handler 410 en la fase 1
-(ADR-0004). Si no las hubo, el handler no se construye y la excepción al "sitio
-estático" desaparece — lo que reabriría la comparación entre Workers y Pages, aunque
-la recomendación de Cloudflare para proyectos nuevos sigue apuntando a Workers.
+**Search Console: limpio.** La visualización no tuvo URLs propias además de la raíz.
+Consecuencias: no se construye handler 410, y **el sitio vuelve a ser 100% estático sin
+excepciones**. Eso anula el argumento decisivo del ADR-0005 (Workers sobre Pages); la
+decisión se mantiene por la hoja de ruta de Cloudflare, que es un argumento más débil
+pero apunta igual. Registrado como actualización dentro del ADR-0005.
+
+**Efecto en la fase 1:** una cosa menos que construir.
 
 ---
 

@@ -66,9 +66,9 @@ El home le habla al reclutador LATAM. No intentes que le hable a las tres a la v
 
 **Decisiones tomadas:**
 
-- **Sitio estático,** con una excepción acotada. Sin base de datos y sin CMS. La excepción es un handler mínimo para emitir códigos de estado que un estático no puede (410 en rutas retiradas), y es lo que decidió el hosting. Ver ADR-0005.
+- **Sitio 100% estático.** Sin servidor, sin base de datos, sin runtime que mantener. La excepción que se llegó a contemplar —un handler para emitir 410— no hace falta: Search Console confirmó que no hay rutas que retirar. Ver la actualización del ADR-0005.
 - **Contenido en archivos versionados en git.** Nada de CMS.
-- **Hosting: Cloudflare Workers con assets estáticos** (no Pages). Cloudflare recomienda Workers para proyectos nuevos y concentra ahí todo el desarrollo; y es el único de los dos que emite el 410 sin pasos intermedios. Gratis, ancho de banda no medido, sin cláusula de uso no comercial. Ver ADR-0005.
+- **Hosting: Cloudflare Workers con assets estáticos** (no Pages). Cloudflare recomienda Workers para proyectos nuevos y concentra ahí todo el desarrollo de features; Pages sigue soportado pero sin inversión nueva. Gratis, ancho de banda no medido, sin cláusula de uso no comercial. Ver ADR-0005.
 - **Dominio: registrado en Namecheap.** **Los nameservers ya están delegados a Cloudflare** (verificado 2026-08-19: `melina/dale.ns.cloudflare.com`) y el MX de Google Workspace está intacto (`1 smtp.google.com`). No queda migración de DNS pendiente, solo repuntar el origen desde S3. **No tocar los registros MX**: el correo no puede caerse. Verificar con `dig +short MX santiagogelvez.com` después de cualquier cambio de origen.
 - **Deploy automático desde git push.** Con previews por rama.
 - **Framework: Astro.** Decisión cerrada, ver ADR-0002. El argumento decisivo no es el soporte de Markdown sino §6: la validación de los archivos de data por esquema en tiempo de build es un requisito nombrado, y Astro la ofrece como primitiva (Content Layer + esquemas Zod) en lugar de pegamento propio. TypeScript estricto, integraciones limitadas a `mdx` y `sitemap`, versiones fijas. El precio aceptado es deuda de actualización: revisión trimestral anotada en `NEXT.md`.
@@ -319,7 +319,7 @@ Esto es prioritario, no un checkbox.
 
 El dominio servía una visualización que publicaba información personal de rutina. Se retiró del repositorio y se archivó fuera de él; la historia de git arranca limpia para no hacerla permanente. Ver ADR-0004.
 
-**Corrección respecto al plan original:** la visualización vivía en `/`, y §5 convierte esa misma ruta en la puerta del sitio nuevo. **No se puede responder 410 ahí.** Lo que aplica en la raíz es reemplazo de contenido, purga de caché y solicitud de remoción en Search Console; Google reindexa lo nuevo. El 410 solo aplica si la visualización tuvo URLs propias además de la raíz — pendiente de confirmar en Search Console (ver `NEXT.md`).
+**Corrección respecto al plan original: el 410 no aplica en ningún lado.** La visualización vivía en `/`, y §5 convierte esa misma ruta en la puerta del sitio nuevo, así que ahí es imposible por definición. Y Search Console confirmó que no tuvo URLs propias además de la raíz, así que no queda ninguna otra ruta candidata. Lo que se hizo, y era lo correcto: reemplazo de contenido, borrado de los objetos del bucket, purga de caché y solicitud de remoción. Google reindexa lo nuevo.
 
 Y un detalle operativo que se olvida: **borrar los archivos locales no borra los objetos del bucket.** Mientras `js/` y `css/` sigan en S3, el dato sigue siendo público y direccionable aunque la portada cambie.
 
@@ -450,7 +450,7 @@ El sitio está listo para publicar cuando:
 7. Sitemap, robots, canonical, `hreflang` y JSON-LD verificados. Las categorías con menos de 3 posts salen con `noindex`.
 8. El formulario de contacto entrega correo y no almacena nada —verificado en la documentación del proveedor—; la página de privacidad existe, está enlazada y nombra al proveedor y a la analítica.
 9. La analítica sin cookies está instalada.
-10. La visualización anterior está eliminada del bucket (no solo del repo) y solicitada su remoción en Search Console. Si tuvo URLs propias además de la raíz, esas responden 410.
+10. ✅ *Cumplido en la fase 0:* la visualización anterior está eliminada del bucket (no solo del repo), verificada con 404 en vivo, y Search Console está limpio.
 11. ✅ *Cumplido desde antes:* el dominio apunta a Cloudflare, con SSL activo y los MX de Workspace intactos y verificados.
 12. Core Web Vitals en verde en móvil.
 13. `DECISIONS.md` y `NEXT.md` al día.
