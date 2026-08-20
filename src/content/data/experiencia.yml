@@ -1,39 +1,82 @@
-# Registros de ejemplo. La trayectoria real entra en la fase 3, con el pipeline
-# del CV. Nada de nombres de clientes, compañeros ni cifras internas.
-- id: ejemplo-actual
-  empresa: Empresa de ejemplo
-  cargo:
-    es: Ingeniero de datos
-    en: Data engineer
-  inicio: "2025-01-01"
-  modalidad: remoto
-  descripcion:
-    es: Registro de ejemplo, sin fecha de fin, para ejercitar el caso "empleo actual".
-    en: Sample record with no end date, to exercise the "current job" case.
-  logros:
-    es:
-      - Viñeta de ejemplo.
-    en:
-      - Sample bullet.
-  stack: [Python, SQL]
-  # Primer eje de filtrado (SPEC §6): en qué salidas aparece este registro.
-  visible_en: [sitio, cv-datos, cv-itsm]
+# ⚠ DATA PROVISIONAL (fase 3). Las empresas, los cargos y los periodos son los
+# reales; las descripciones, los logros y la modalidad están **inventados** para
+# ejercitar el pipeline del CV de punta a punta. Santiago los reemplaza.
+#
+# Reglas permanentes al reescribirlos: nada de nombres de clientes ni de
+# compañeros, y ninguna cifra interna de El Tiempo, Tigo o Solvo. Un logro se
+# escribe por lo que se construyó y por qué, no por un número que no se puede
+# publicar ni verificar.
+#
+# El orden del archivo da igual: la capa de consulta ordena por fecha de inicio,
+# del más reciente al más antiguo.
 
-- id: ejemplo-anterior
-  empresa: Otra empresa de ejemplo
+- id: solvo-itsm
+  empresa: Solvo
   cargo:
-    es: Analista de datos
-    en: Data analyst
-  inicio: "2023-01-01"
-  fin: "2024-12-31"
+    es: Analista ITSM
+    en: ITSM Analyst
+  inicio: "2024-05-06"
+  fin: "2024-10-31"
   modalidad: hibrido
   descripcion:
-    es: Registro de ejemplo que solo aparece en el CV de ITSM, no en el sitio.
-    en: Sample record that only shows up in the ITSM CV, not on the site.
+    es: Gestión de incidentes y solicitudes bajo prácticas ITIL, con la automatización del reporte de la mesa de servicio.
+    en: Incident and request management under ITIL practices, including automation of the service desk reporting.
   logros:
     es:
-      - Viñeta de ejemplo.
+      - Atendí incidentes y solicitudes con acuerdos de nivel de servicio medidos contra el registro de la mesa, no estimados a ojo.
+      - Automaticé en Python la extracción de la mesa de servicio hacia un tablero de seguimiento que antes se armaba a mano cada semana.
+      - Documenté los procedimientos recurrentes de soporte para que dejaran de vivir en la cabeza de quien estuviera de turno.
     en:
-      - Sample bullet.
-  stack: [SQL]
-  visible_en: [cv-itsm]
+      - Handled incidents and requests with service level agreements measured against the desk's own records rather than estimated by eye.
+      - Automated the service desk extraction into a tracking dashboard in Python, replacing a report that was rebuilt by hand every week.
+      - Documented the recurring support procedures so they stopped living in the head of whoever was on shift.
+  stack: [Python, SQL, ITIL, Power BI]
+  visible_en: [sitio, cv-datos, cv-itsm]
+
+- id: tigo-fullstack
+  empresa: Tigo
+  cargo:
+    es: Desarrollador Fullstack
+    en: Fullstack Developer
+  inicio: "2022-02-14"
+  fin: "2024-02-29"
+  modalidad: remoto
+  descripcion:
+    es: Servicios internos de operación en TypeScript y Python sobre PostgreSQL, con las APIs pensadas como fuente de datos y no solo como respuesta de pantalla.
+    en: Internal operations services in TypeScript and Python on PostgreSQL, with APIs designed as a data source and not just as a screen response.
+  logros:
+    es:
+      - Desarrollé servicios en TypeScript y Python sobre PostgreSQL para procesos internos de operación.
+      - Diseñé los contratos de las APIs pensándolos como fuente de datos analíticos, no solo como respuesta a una pantalla; los tableros de operación se alimentan de ahí.
+      - Instalé pruebas automatizadas y despliegue continuo en un repositorio que hasta entonces se desplegaba a mano.
+    en:
+      - Built TypeScript and Python services on PostgreSQL for internal operations processes.
+      - Designed the API contracts as an analytical data source rather than just a screen response; the operations dashboards feed from there.
+      - Set up automated tests and continuous deployment in a repository that until then was deployed by hand.
+  stack: [TypeScript, Python, PostgreSQL, Docker, Git]
+  visible_en: [sitio, cv-datos, cv-itsm]
+
+# Solo en `cv-datos`: en una postulación de ITSM este registro es ruido, y es lo
+# que hace visible que el filtro por registro de SPEC §6 hace algo de verdad.
+- id: el-tiempo-datos
+  empresa: El Tiempo
+  cargo:
+    es: Ingeniero de Datos
+    en: Data Engineer
+  inicio: "2021-08-02"
+  fin: "2022-02-11"
+  modalidad: hibrido
+  descripcion:
+    es: Ingesta y consolidación de fuentes internas en un almacén analítico, con la carga diaria orquestada y alertada.
+    en: Ingestion and consolidation of internal sources into an analytical warehouse, with the daily load orchestrated and alerted.
+  logros:
+    es:
+      - Construí pipelines de ingesta en Python que consolidaron fuentes dispersas en un solo almacén analítico.
+      - Migré reportes de hoja de cálculo a consultas versionadas en SQL, con la lógica de negocio en un único lugar auditable.
+      - Orquesté la carga diaria con Airflow y dejé alertas de fallo, porque hasta entonces un error se descubría al abrir el reporte.
+    en:
+      - Built Python ingestion pipelines that consolidated scattered sources into a single analytical warehouse.
+      - Migrated spreadsheet reports to version-controlled SQL queries, with the business logic in one auditable place.
+      - Orchestrated the daily load with Airflow and added failure alerts, since until then a failure surfaced only when someone opened the report.
+  stack: [Python, SQL, Airflow, PostgreSQL]
+  visible_en: [sitio, cv-datos]

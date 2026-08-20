@@ -1,0 +1,79 @@
+# Construye y publica el sitio (ADR-0030).
+#
+# Está aquí y no en Workers Builds de Cloudflare por una sola razón: **generar
+# los PDF del CV exige un Chromium**, y la imagen de build de Cloudflare es una
+# Ubuntu sin `sudo` ni `apt-get`, así que no se le pueden instalar las librerías
+# del sistema contra las que Chromium enlaza. `ubuntu-latest` sí las admite.
+#
+# La consecuencia buena es la que motivó el cambio: los PDF salen del **mismo
+# build** que el HTML, así que no pueden quedarse viejos. Antes viajaban
+# versionados en `public/cv/` y bastaba cambiar la data y no acordarse de correr
+# un comando para desplegar un CV desactualizado.
+#
+# Repositorio público ⇒ minutos de Actions gratis e ilimitados. Sigue siendo $0/mes.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  # Para poder relanzar un despliegue sin tener que inventar un commit.
+  workflow_dispatch:
+
+# Solo el `git push` publica; el workflow no escribe en el repositorio.
+permissions:
+  contents: read
+
+# Dos push seguidos no se pisan: gana el último y el anterior se cancela antes
+# de subir nada.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          # **Obligatorio, y no es una optimización al revés.** El clon por
+          # defecto es superficial y la fecha "Data actualizada" del CV sale de
+          # `git log -1 -- src/content/data` (SPEC §7). Sin historia ese comando
+          # devuelve vacío y el build falla a propósito, en vez de inventarse una
+          # fecha. El escape documentado es `CV_DATA_UPDATED`, pero lo correcto
+          # aquí es traer la historia.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          # Mismo mayor que `engines.node` en package.json.
+          node-version: '22'
+          cache: npm
+
+      - run: npm ci
+
+      # Solo chromium, y `--with-deps` para las librerías del sistema. Es el
+      # paso que Cloudflare no puede dar. Tarda ~40 s; si algún día molesta, se
+      # cachea `~/.cache/ms-playwright` con la versión de Playwright en la clave.
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: TypeScript
+        run: npm run check
+
+      # `verify` construye el sitio, genera los cuatro PDF públicos, deriva las
+      # 27 rutas del contenido y corre la prueba ATS sobre los PDF que se van a
+      # desplegar. Si algo de eso falla, no se publica nada.
+      - name: Construir y verificar
+        run: npm run verify
+
+      # Wrangler propio y fijado en devDependencies (4.124.0), no el que decida
+      # una acción de terceros: es la regla de versiones fijas de ADR-0002, y una
+      # dependencia menos en quien confiar para algo que tiene un token de
+      # despliegue en la mano.
+      - name: Publicar en Cloudflare
+        run: npx wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

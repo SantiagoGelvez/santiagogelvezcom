@@ -1,0 +1,13 @@
+# Plantilla del archivo de campos no publicables (ADR-0006, ADR-0027).
+#
+# Cópialo a `perfil.private.yml` —**ignorado por git**— y pon ahí los datos
+# reales. Ese archivo no lo lee Astro ni entra a ninguna colección: lo lee
+# únicamente `npm run cv:full`, en tu computador, y lo inyecta en el navegador
+# justo antes de imprimir. El valor nunca existe dentro de `src/`, ni dentro de
+# `dist/`, ni en la historia de git.
+#
+# Cada clave corresponde a una ranura `data-cv-private="<clave>"` de la página
+# `/cv/`. Una clave que no tenga ranura hace fallar el comando: un dato privado
+# que se cree publicado y no lo esté es peor que un error.
+
+telefono: "+57 300 000 0000"

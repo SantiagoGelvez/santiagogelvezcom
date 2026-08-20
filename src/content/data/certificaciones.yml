@@ -1,14 +1,37 @@
-- id: ejemplo-obtenida
-  nombre: Certificación de ejemplo
-  emisor: Emisor de ejemplo
+# ⚠ DATA PROVISIONAL (fase 3). Las certificaciones están **inventadas**, igual
+# que los IDs de credencial. Las URL de verificación sí son las de los
+# verificadores reales de cada emisor —no enlaces fabricados— para que ningún
+# despliegue accidental publique un 404.
+#
+# Regla de SPEC §12: aquí solo entran exámenes de un tercero, verificables.
+# Los cursos de preparación no se listan nunca — el curso es el medio, la
+# certificación es el artefacto, y el estado `en-curso` ya lo comunica.
+
+- id: aws-data-engineer-associate
+  nombre: AWS Certified Data Engineer – Associate
+  emisor: Amazon Web Services
   estado: obtenida
-  obtencion: "2025-06-01"
-  vencimiento: "2028-06-01"
+  obtencion: "2025-07-18"
+  vencimiento: "2028-07-18"
+  credencial: PENDIENTE-ID-REAL
+  verificacion: https://aws.amazon.com/verification
+  visible_en: [sitio, cv-datos, cv-itsm]
+
+- id: databricks-data-engineer-associate
+  nombre: Databricks Certified Data Engineer Associate
+  emisor: Databricks
+  estado: obtenida
+  obtencion: "2025-03-14"
+  vencimiento: "2027-03-14"
+  credencial: PENDIENTE-ID-REAL
+  verificacion: https://credentials.databricks.com/
   visible_en: [sitio, cv-datos]
 
-# El estado `en-curso` es deliberado: comunica trayectoria activa (SPEC §6).
-- id: ejemplo-en-curso
-  nombre: Certificación en curso de ejemplo
-  emisor: Emisor de ejemplo
+# El estado `en-curso` es deliberado (SPEC §6): comunica trayectoria activa sin
+# afirmar un título que todavía no existe. Una certificación en curso no lleva
+# fecha de obtención — el esquema lo impide.
+- id: databricks-data-engineer-professional
+  nombre: Databricks Certified Data Engineer Professional
+  emisor: Databricks
   estado: en-curso
   visible_en: [sitio, cv-datos]

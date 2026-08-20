@@ -1,12 +1,18 @@
 ---
 import Base from '~/layouts/Base.astro';
 import Section from '~/components/Section.astro';
-import PlaceholderNotice from '~/components/PlaceholderNotice.astro';
 import { path } from '~/i18n/routes';
-import { sectionLabels, pageDescriptions } from '~/i18n/ui';
+import { sectionLabels, pageDescriptions, ui } from '~/i18n/ui';
+import { profileData } from '~/lib/content';
+import { cvView, SITE_VARIANT } from '~/lib/cv';
 
 const locale = 'en' as const;
 const section = 'contact' as const;
+
+// El enlace al PDF sale de la misma capa que lo nombra en `/cv/`: una sola
+// convención de nombre de archivo, y `verify-routes.mjs` comprueba que exista.
+const profile = await profileData();
+const view = await cvView(SITE_VARIANT, locale);
 ---
 
 <Base
@@ -19,7 +25,27 @@ const section = 'contact' as const;
 >
   <Section as="div">
     <h1>{sectionLabels[section][locale]}</h1>
-    <p class="lead">{pageDescriptions[section][locale]}</p>
-    <PlaceholderNotice locale={locale} />
+    <p class="lead">{ui.contactNoForm[locale]}</p>
+
+    <ul class="entries entries--bus">
+      <li class="stub">
+        {ui.contactQuick[locale]}
+        {' '}
+        <a href={profile.enlaces.github}>{profile.enlaces.github.replace(/^https?:\/\//, '')}</a>
+      </li>
+      <li class="stub">
+        {ui.contactWork[locale]}
+        {' '}
+        <a href={view.pdf} download>{ui.downloadCv[locale]}</a>
+        {' — '}
+        <a href={path(locale, 'cv')}>{ui.orReadItHere[locale]}</a>
+      </li>
+    </ul>
+
+    {/*
+      Por qué el correo no está escrito aquí (ADR-0029). No es una disculpa: es
+      la clase de decisión que este sitio existe para mostrar.
+    */}
+    <p class="note">{ui.contactWhyNoEmail[locale]}</p>
   </Section>
 </Base>

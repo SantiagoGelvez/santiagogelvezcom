@@ -1,20 +1,37 @@
 # Un solo registro, en forma de lista porque el cargador `file()` espera un
 # arreglo de objetos con `id`, no un objeto suelto.
+#
+# ⚠ El `resumen` es provisional (fase 3): dice lo correcto sobre la trayectoria
+# real, pero el texto definitivo se escribe en la fase 6 junto con el resto del
+# contenido de lanzamiento.
 - id: santiago
   nombre: Santiago Gelvez
+  # SPEC §7: el titular dice "Ingeniero de Datos" / "Data Engineer" y nada más.
+  # Es el string que el reclutador busca y que el parser sabe mapear; un título
+  # inventado como "AI Data Analytics Engineer" queda fuera de las búsquedas
+  # booleanas. El ángulo de IA va en el resumen y en las skills, no aquí.
   headline:
     es: Ingeniero de Datos
     en: Data Engineer
   resumen:
-    es: Resumen de relleno. El texto real se escribe en la fase 6.
-    en: Placeholder summary. The real text gets written in phase 6.
+    es: "Ingeniero electrónico que llegó a los datos por el camino largo: ingesta y orquestación primero, dos años construyendo servicios en producción después. Diseño pipelines y modelos analíticos, y documento por qué cada arquitectura quedó como quedó."
+    en: "An electronic engineer who came to data the long way around: ingestion and orchestration first, then two years building production services. I design pipelines and analytical models, and I document why each architecture ended up the way it did."
   ciudad: Duitama
   pais: Colombia
   # Alias del dominio, rotable, nunca el correo principal de Workspace
   # (ADR-0006). Este valor es un marcador: el alias real se decide en la fase 7,
   # junto con la ofuscación, y no se versiona antes de esa decisión.
-  correo: ejemplo@santiagogelvez.com
+  correo: hola@santiagogelvez.com
+  # Regla de SPEC §12, hecha estructura: los ~50 cursos de Platzi y Udemy se
+  # agregan en dos líneas y **no se enumeran**. No existe una colección de
+  # cursos donde puedan crecer a 50 entradas bilingües que se desactualizan el
+  # día que termine el curso 51; existe este campo, y en el PDF ocupa una línea.
+  cursos:
+    es: Más de 50 cursos completados en Platzi y Udemy, en ingeniería de datos y desarrollo de software.
+    en: Over 50 completed courses on Platzi and Udemy, in data engineering and software development.
   enlaces:
     github: https://github.com/SantiagoGelvez
-    # Marcador hasta la fase 3.
-    linkedin: https://www.linkedin.com/in/pendiente/
+    # ⚠ `linkedin` y `platzi` van aquí cuando existan las URL reales. El campo es
+    # opcional: mientras no esté, no se publica en ningún sitio —ni en el CV, ni
+    # en el `sameAs` del JSON-LD—. Un marcador enlazado es peor que un hueco,
+    # porque el hueco no manda a nadie a un 404.

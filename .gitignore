@@ -6,10 +6,23 @@
 .env.*
 !.env.example
 src/data/private/
+# Las tres extensiones, y la de `.yml` no es redundante: es la que usa todo el
+# repositorio. El patrón original solo cubría `.yaml`, así que el archivo real
+# —`src/content/data/perfil.private.yml`— habría entrado al primer `git add .`.
+*.private.yml
 *.private.yaml
 *.private.json
+# El ejemplo sí se versiona: documenta la forma del archivo, no lleva un dato.
+!*.private.example.yml
 
 # === Salidas del pipeline de CV ===
+# Nada de lo que produce el pipeline se versiona (ADR-0030). Los PDF públicos
+# van a `dist/cv/`, que ya está ignorado más abajo, y se regeneran en cada
+# `npm run build`. Así no puede existir un PDF más viejo que la data.
+#
+# Guarda defensiva: `public/cv/` ya no existe —ahí vivían versionados— pero si
+# alguien lo recrea, lo que caiga dentro no se puede commitear por accidente.
+/public/cv/
 # El PDF completo (con teléfono) se genera en local y no se despliega.
 /cv-out/
 *-completo.pdf

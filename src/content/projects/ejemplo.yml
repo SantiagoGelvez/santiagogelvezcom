@@ -20,4 +20,8 @@ stack: [Astro, TypeScript, Cloudflare Workers]
 destacado: true
 orden: 1
 posts_relacionados: [ejemplo]
-visible_en: [sitio]
+# También en `cv-datos`: la sección de proyectos del CV sale de la misma
+# colección que el índice del sitio, y sin esto quedaría vacía. Es además el
+# único registro con periodo abierto, así que es el que ejercita la rama
+# "sin fecha de fin" del formateo de periodos.
+visible_en: [sitio, cv-datos]

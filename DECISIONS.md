@@ -7,6 +7,249 @@ Orden cronológico inverso — lo más reciente arriba.
 
 ---
 
+## ADR-0030 — Los PDF se generan en cada build; el despliegue se muda a GitHub Actions
+
+**Fecha:** 2026-08-20
+
+**Reemplaza a ADR-0028**, escrito unas horas antes en la misma sesión. Un ADR no se edita:
+se sustituye.
+
+**Decisión.** `npm run build` pasa a ser `astro build && node scripts/cv-pdf.mjs`, así que
+**cada compilación genera los PDF**. Salen a `dist/cv/`, que ya está ignorado, y
+`public/cv/` deja de existir: nada de lo que produce el pipeline se versiona. El comando
+`cv:pdf` se borra — mientras exista un comando aparte que hay que recordar, se olvida.
+
+Como generar un PDF exige un Chromium y la imagen de build de Cloudflare no puede tenerlo,
+el despliegue se muda a **GitHub Actions** (`.github/workflows/deploy.yml`): el push sigue
+publicando, pero quien construye es un runner que sí puede abrir un navegador. Workers
+Builds se desconecta.
+
+**Alternativas consideradas.** Generarlos en Workers Builds de Cloudflare. Desplegar a mano
+desde local con `npm run deploy`. Generar el PDF sin navegador, con una librería de
+composición.
+
+**Por qué.** ADR-0028 tenía un error que Santiago detectó con una sola pregunta: si cambias
+la descripción de un cargo y empujas sin regenerar, **el sitio publica el PDF viejo**. El
+enlace no regenera nada, sirve una foto tomada antes.
+
+Lo grave no es el bug sino la incoherencia. ADR-0027, escrito una hora antes, rechazó
+depender de la disciplina para el teléfono con el argumento de que «la regla debe ser
+imposible de violar por construcción, no depender de que nadie se equivoque». ADR-0028
+aceptó exactamente lo contrario para la frescura del PDF, y se defendió con una
+comprobación de fechas de commit en `verify-routes.mjs` que **no está en el camino del
+despliegue**: Cloudflare corre el comando de build del panel, no `npm run verify`. La
+comprobación protegía a quien ya se estaba portando bien.
+
+La razón por la que los PDF vivían en el repositorio era mecánica y no arquitectónica:
+quien publica es Cloudflare, que clona GitHub y arma el sitio en su máquina, y nada en ese
+camino genera un PDF. Si no van en el clon, no existen — y el botón de descarga da 404.
+
+Generarlos en Workers Builds resolvería eso sin mover el despliegue, y era la opción
+preferible si funcionara. **No funciona:** la imagen es Ubuntu 24.04 sin `sudo` ni
+`apt-get`, y no trae ninguna librería de navegador. `npx playwright install` baja el
+binario de Chromium, no las librerías del sistema contra las que enlaza —`libnss3`,
+`libnspr4`, `libasound2t64`, las mismas que hubo que instalar a mano en la máquina de
+desarrollo—. Ahí Chromium no arranca.
+
+Desplegar desde local era la opción más simple —cero CI, cero tokens— y se descartó por lo
+que cuesta: publicar quedaría atado a una máquina, y un sitio que se actualiza con posts
+semanales no debería necesitar un computador concreto para corregir una errata.
+
+Y generar el PDF sin navegador está prohibido por ADR-0007: cualquier segunda cadena de
+herramientas crea un segundo lugar donde vive el CV, que es justo lo que el modelo de datos
+de SPEC §6 existe para evitar. Sería escribir la maquetación dos veces.
+
+**Qué se sacrificó.** Una pieza de CI nueva que mantener, con dos secrets que rotar
+(`CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`) y una superficie de confianza más — un
+token con permiso de desplegar Workers vive ahora en GitHub. Se apaga la tubería de Workers
+Builds, que estaba probada de punta a punta y publicaba en 75 segundos; el nuevo camino
+añade ~40 s por despliegue bajando Chromium. Y el proyecto gana una dependencia de
+plataforma que antes no tenía: si GitHub Actions se cae, no se publica, aunque Cloudflare
+esté perfectamente.
+
+También queda un modo de fallo nuevo mientras dure la transición: **si Workers Builds sigue
+conectado, cada push dispara dos despliegues** y el de Cloudflare publica un sitio sin los
+PDF. Desconectarlo no es opcional, es parte de la decisión.
+
+---
+
+## ADR-0029 — El correo no se renderiza en HTML; el PDF es su único portador
+
+**Fecha:** 2026-08-20
+
+**Decisión.** Ninguna ruta del sitio publica el correo. La página `/cv/` lleva una ranura
+vacía —`<span data-cv-print="correo" hidden>`— que el pipeline rellena desde `perfil.yml`
+un instante antes de imprimir, así que el alias entra a los cuatro PDF y a ningún HTML. Es
+el mecanismo de ADR-0027 con un segundo nivel: `data-cv-print` para lo publicable que no
+puede ir en HTML, `data-cv-private` para lo que no es publicable en absoluto.
+
+En el PDF va como **texto plano y no como enlace `mailto:`**. Y la regla se vuelve un
+invariante comprobado en los dos sentidos: `verify-routes.mjs` falla si alguna página
+construida contiene `mailto:` o el alias, y `check-cv-pdf.mjs` falla si el PDF **no** lo
+contiene. `/contacto/` explica el orden mientras el formulario llega en la fase 7.
+
+**Alternativas consideradas.** Guardar correo y teléfono en *secrets* de Cloudflare y
+leerlos al descargar el CV o al enviar el formulario. Ofuscar la dirección con JavaScript,
+con trucos de CSS (`direction: rtl`, `::after`) o como imagen. Activar la ofuscación de
+correo de Cloudflare Scrape Shield. Dejarlo como estaba, confiando en la rotación del alias.
+
+**Por qué.** SPEC §11 ya lo decía —«nunca en texto plano, se cosecha en semanas»— y la
+página del CV lo incumplió el primer día que se escribió, que es exactamente lo que pasa
+con una regla que solo vive en un documento. Por eso lo importante de este ADR no es la
+ranura sino el invariante: ahora la regla se rompe en `npm run verify`, no en producción.
+
+Los *secrets* no podían funcionar, y conviene registrarlo para no reabrirlo. `wrangler.jsonc`
+es un Worker de solo assets sin `main`: un secret solo lo lee código de servidor en tiempo
+de petición, y aquí no hay código, así que añadirlo reabriría ADR-0003 y ADR-0005. El PDF,
+además, es un archivo precompilado y versionado (ADR-0028): «tomarlo de secrets al
+descargar» exigiría renderizarlo por petición con Chromium —imposible en un Worker— o
+parchear bytes sobre una tabla de referencias cruzadas con desplazamientos absolutos. Pero
+el argumento que decide es más simple: **un valor que se le entrega a quien lo pida no es
+un secreto.** Si el endpoint lo devuelve, el cosechador llama al endpoint; si el PDF lo
+lleva, descarga el PDF. El costo del atacante pasaría de «parsear HTML» a «hacer una
+petición más». Eso no es una defensa.
+
+La ofuscación se descartó por razones propias del proyecto: el JavaScript sería la primera
+línea de script del sitio, contra una técnica que un cosechador con navegador headless
+derrota igual; los trucos de CSS y la imagen rompen copiar y pegar y el lector de pantalla,
+contra el piso de accesibilidad de SPEC §13; y Scrape Shield inyecta script en la página,
+además de volverse irrelevante en cuanto no queda ningún `mailto:` que reescribir.
+
+**El PDF sí tiene que llevarlo**, y eso no era negociable: va a un ATS que parsea el bloque
+de contacto y crea una ficha de candidato (SPEC §7). Un CV sin correo produce una ficha a
+la que nadie puede responder — un fallo mucho peor que el spam. Los modelos de amenaza son
+distintos: los cosechadores raspan HTML a escala industrial, y descargar y parsear PDFs es
+un comportamiento raro y caro. Lo que sí se corrigió es que el `mailto:` guardaba el URI
+**sin comprimir** en la anotación del enlace, así que `grep` encontraba el correo dentro
+del PDF versionado en un repo público. Como texto plano queda en el stream comprimido,
+igual que el teléfono.
+
+El correo **no** se mudó al archivo privado, y la distinción importa: es un valor
+publicado, en un PDF que se commitea. Esconderlo del repositorio daría una falsa sensación
+de secreto y rompería la regeneración del PDF público desde un clon limpio. Lo que se
+protege es el raspado de HTML, no la publicación. La defensa de fondo sigue siendo la de
+ADR-0006: el alias es rotable, así que el daño está acotado por diseño.
+
+**Qué se sacrificó.** Hasta la fase 7 no hay formulario, así que el único canal de bajo
+roce es GitHub y quien no lo use tiene que descargar un PDF para poder escribir — fricción
+real en la página cuyo trabajo es justamente quitarla. El PDF público deja de poder
+generarse sin ejecutar el script, porque el correo ya no está en el HTML del que se
+imprime. Y quien lea el CV en pantalla no puede copiar la dirección: tiene que bajarse el
+documento. Los tres son el precio de que la dirección no esté escrita en ningún sitio que
+un robot visite gratis.
+
+---
+
+## ADR-0028 — Los PDF públicos se generan en local y se versionan; el build no lleva navegador
+
+> ⚠ **Reemplazado por ADR-0030 el mismo día.** El error: aceptó depender de la disciplina
+> para la frescura del PDF, justo lo que ADR-0027 había rechazado unas horas antes en este
+> mismo archivo. Se conserva sin editar porque el razonamiento equivocado también es parte
+> del registro — y porque el argumento que lo tumbó no fue teórico: lo encontró Santiago
+> preguntando qué pasa si cambia un cargo y no corre el comando.
+
+**Fecha:** 2026-08-20
+
+**Decisión.** Los dos PDF públicos del CV se generan con `npm run cv:pdf` en el
+computador y se **versionan en `public/cv/`**. El build de Cloudflare los copia como
+copia cualquier otro asset estático: no descarga Chromium, no ejecuta Playwright y no
+sabe que existe un pipeline de PDF. Que un PDF quede desfasado se convierte en un fallo
+de `npm run verify`, que compara la fecha del último commit de `src/content/data/` con
+la del último commit de `public/cv/` y falla si la data es más nueva.
+
+**Alternativas consideradas.** Generarlos en build, que es lo que decía SPEC §15.4:
+Playwright como dependencia del build de Cloudflare y los PDF como artefactos efímeros
+que nunca entran al repositorio.
+
+**Por qué.** Generarlos en build mete un navegador de ~150 MB en el camino crítico del
+despliegue. Eso cuesta minutos en cada publicación —hoy el deploy entero dura 75
+segundos— y agrega un modo de fallo nuevo y desagradable: si la descarga de Chromium
+falla en el CI de Cloudflare, no se puede publicar **un post**. El acoplamiento es al
+revés de lo que conviene: el CV cambia cuatro veces al año y los posts cambian cada
+semana, así que el artefacto lento debe estar fuera del camino del rápido. Versionarlos
+además los hace revisables —un PDF que cambia aparece en el diff— y sobre todo mantiene
+en pie la razón por la que se eligió Cloudflare: el presupuesto de $0/mes y un build que
+cabe en la capa gratuita sin pelearse con los límites de tiempo.
+
+El argumento en contra —"un artefacto generado no se versiona"— es una buena regla
+general que aquí no aplica: estos PDF **son contenido publicado**, igual que las cuatro
+`.woff2` de `public/fonts/` que ADR-0022 ya decidió versionar por el mismo motivo.
+
+**Qué se sacrificó.** La única fuente de verdad deja de estar garantizada por
+construcción y pasa a estarlo por una comprobación: si alguien cambia la data, no corre
+`npm run cv:pdf` y **commitea las dos cosas a la vez**, el árbitro no ve la regresión y
+el PDF desplegado queda viejo hasta el siguiente cambio de `public/cv/`. La comprobación
+por fecha de commit atrapa el caso normal, no el patológico. Y el repositorio carga
+~300 KB de binario que crecen en cada regeneración, con diffs ilegibles.
+
+---
+
+## ADR-0027 — El campo no publicable se inyecta en el navegador, no en el build
+
+**Fecha:** 2026-08-20
+
+**Decisión.** La página `/cv/` renderiza una **ranura vacía** —`<span data-cv-private="…"
+hidden>`— donde iría el teléfono. Lo que se despliega lleva esa ranura vacía. El comando
+local `npm run cv:full` lee `src/content/data/perfil.private.yml` —ignorado por git— y
+rellena la ranura en el DOM, con Playwright, un instante antes de imprimir. Una clave del
+archivo privado sin ranura correspondiente **hace fallar el comando**: un dato que se
+crea publicado y no lo esté es peor que un error ruidoso. Los PDF completos se escriben
+en `cv-out/`, y el script comprueba sobre el disco —no confiando en su propia lógica—
+que ninguno terminó en `public/` ni en `dist/`.
+
+**Alternativas consideradas.** Un segundo build con `CV_PRIVATE=1` que sí leyera el
+archivo privado, imprimiera desde ese `dist/` y lo descartara.
+
+**Por qué.** Es lo que hace que ADR-0006 sea verdad por construcción y no por disciplina.
+Con el segundo build existe, aunque sea durante segundos, un `dist/` con el teléfono
+dentro; y `dist/` es exactamente el directorio que un `wrangler deploy` publica. Basta un
+comando en el orden equivocado, un `Ctrl-C` a mitad, o un CI que cachee el directorio de
+salida, para publicarlo. Con la inyección en el navegador **no existe el archivo que se
+podría publicar**: el valor vive en la memoria del proceso durante los milisegundos que
+dura la impresión, y no toca `src/`, ni `dist/`, ni la historia de git. La regla deja de
+depender de que nadie se equivoque.
+
+De paso obligó a arreglar un agujero que llevaba abierto desde la fase 0: `.gitignore`
+ignoraba `*.private.yaml` y **no** `*.private.yml`, que es la extensión que usa todo el
+repositorio. El archivo real habría entrado al primer `git add .` — en un repo público,
+y ADR-0009 recuerda que eso no se arregla borrando.
+
+**Qué se sacrificó.** El HTML público lleva una ranura vacía que no le sirve a nadie, y
+existe un acoplamiento entre un script de Node y un atributo del DOM: renombrar
+`data-cv-private` en la plantilla rompe el pipeline en silencio hasta que alguien corra
+`cv:full`. Se compensa haciendo que una clave sin ranura falle en vez de omitirse, que
+convierte el modo de fallo peligroso —imprimir sin el dato— en uno ruidoso.
+
+---
+
+## ADR-0026 — La variante del CV declara idiomas en plural
+
+**Fecha:** 2026-08-20
+
+**Decisión.** En `variantes-cv.yml`, el campo `idioma` (escalar) pasa a ser `idiomas`
+(lista no vacía). El pipeline deriva sus salidas del producto de cada variante por sus
+idiomas, así que registrar una variante nueva basta para que se generen sus PDF sin
+tocar código.
+
+**Alternativas consideradas.** Dejar el campo como estaba y que el script llevara
+escritos los cuatro pares variante×idioma. Partir cada variante en dos registros, uno
+por idioma, duplicando `filtro` y `orden_secciones`.
+
+**Por qué.** SPEC §6 describía `variantes_cv[]` con «idioma» en singular, pero ADR-0011
+—posterior— exige cuatro PDF de `cv-datos`: público y completo, en español y en inglés.
+Los dos documentos no podían ser ciertos a la vez: el idioma es un **eje ortogonal** a la
+variante, no un atributo suyo. Un campo escalar que el pipeline tuviera que ignorar sería
+peor que no tenerlo, porque la data diría una cosa y el comportamiento otra; y duplicar
+el registro por idioma pondría `filtro` y `orden_secciones` en dos sitios donde pueden
+divergir. La regla de desempate de ADR-0010 aplica tal cual: gana el ADR más reciente y
+la spec se actualiza.
+
+**Qué se sacrificó.** `docs/SPEC.md` §6 queda corregida en un punto que se escribió antes
+de que existiera ADR-0011, así que la spec ya no se lee como el documento original.
+Es el precio previsto de la regla de desempate.
+
+---
+
 ## ADR-0025 — La ruta de navegación solo en las páginas que cuelgan de un índice
 
 **Fecha:** 2026-08-19

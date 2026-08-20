@@ -1,6 +1,7 @@
 ---
 import { path, url, otherLocale, localeNames, locales, type Locale, type SectionKey } from '../i18n/routes';
 import { ui, sectionLabels, navSections } from '../i18n/ui';
+import { profileData } from '../lib/content';
 import '../styles/tokens.css';
 import '../styles/base.css';
 import '../styles/prose.css';
@@ -47,6 +48,18 @@ const switchIsFallback = alternateHere === undefined;
 // No a `/`, que responde 301: declarar `hreflang` hacia una URL que redirige
 // es un error que Search Console reporta.
 const xDefault = alternates['es'];
+
+// El JSON-LD sale de `perfil.yml` y no de literales en la plantilla. Antes
+// llevaba un GitHub y un LinkedIn escritos a mano aquí: dos URL que nadie
+// validaba y que ya no coincidían con la data. `sameAs` solo lista perfiles que
+// existen de verdad — es la misma regla que `hreflang` (SPEC §8), aplicada a
+// los datos estructurados.
+const profile = isHome ? await profileData() : undefined;
+const sameAs = profile
+  ? [profile.enlaces.github, profile.enlaces.linkedin, profile.enlaces.platzi].filter(
+      (link): link is string => typeof link === 'string',
+    )
+  : [];
 ---
 <!doctype html>
 <html lang={locale}>
@@ -91,11 +104,11 @@ const xDefault = alternates['es'];
           // misma persona, no dos personas. Sin esto Google puede tratarlas como
           // entidades distintas, que es justo lo contrario de lo que busca §10.
           '@id': 'https://santiagogelvez.com/#santiago',
-          name: ui.siteName[locale],
-          jobTitle: ui.role[locale],
+          name: profile!.nombre,
+          jobTitle: profile!.headline[locale],
           url: url(site, locale, 'home'),
           address: { '@type': 'PostalAddress', addressLocality: 'Duitama', addressRegion: 'Boyacá', addressCountry: 'CO' },
-          sameAs: ['https://github.com/santiagogelvez', 'https://www.linkedin.com/in/santiagogelvez/'],
+          sameAs,
         })}
       />
     )}

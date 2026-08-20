@@ -14,6 +14,7 @@
  * `meta description`, `hreflang` solo hacia páginas que existen, la regla de
  * indexación de ADR-0012 y que no haya fuentes del CDN de Google.
  */
+import { execFileSync } from 'node:child_process';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
@@ -96,7 +97,14 @@ async function readProjects() {
   );
 }
 
-const [allPosts, allProjects] = await Promise.all([readPosts(), readProjects()]);
+async function readProfile() {
+  const records = yaml.load(await readFile(path.join(content, 'data', 'perfil.yml'), 'utf8'));
+  const profile = records.find((item) => item?.id === 'santiago');
+  if (profile === undefined) throw new Error('Falta el registro `santiago` en perfil.yml');
+  return profile;
+}
+
+const [allPosts, allProjects, profile] = await Promise.all([readPosts(), readProjects(), readProfile()]);
 
 const published = allPosts.filter((post) => post.data.estado === 'publicado');
 const drafts = allPosts.filter((post) => post.data.estado !== 'publicado');
@@ -193,6 +201,18 @@ for (const [value, html] of pages) {
   if (html.includes('fonts.googleapis.com') || html.includes('fonts.gstatic.com')) {
     fail(value, 'carga fuentes desde el CDN de Google');
   }
+
+  // El correo no se publica en HTML (ADR-0029). «Nunca en texto plano — se
+  // cosecha en semanas» (SPEC §11) era una regla que solo vivía en un documento,
+  // y por eso la página del CV la incumplió el primer día que se escribió. Aquí
+  // deja de poder incumplirse en silencio: el alias entra al PDF por inyección,
+  // así que ninguna ruta construida tiene por qué contenerlo.
+  if (html.includes('mailto:')) {
+    fail(value, 'contiene un enlace `mailto:` — el correo no se publica en HTML (ADR-0029)');
+  }
+  if (html.includes(profile.correo)) {
+    fail(value, `contiene el correo en texto plano (${profile.correo}) — ADR-0029`);
+  }
 }
 
 /* ------------------------------------------------- ADR-0012: umbral de index */
@@ -232,6 +252,72 @@ for (const post of published) {
   }
 }
 
+/* ------------------------------------------------------------- PDF del CV
+ *
+ * `npm run build` genera los PDF en cada compilación y los deja en `dist/cv/`
+ * (ADR-0030), así que **no puede haber un PDF más viejo que la data**: salen del
+ * mismo build. Aquí no se comprueba frescura porque no hay nada que envejecer.
+ *
+ * Lo que sí se comprueba es que el pipeline haya corrido: el PDF que la página
+ * **promete** tiene que existir. Un enlace de descarga hacia un archivo que nadie
+ * generó es un 404 en la ruta que más le importa a un reclutador, y es el modo
+ * de fallo real ahora que el archivo no viaja en el repositorio.
+ */
+
+const cvLinks = [];
+let printTargets = 0;
+for (const [value, html] of pages) {
+  // `data-cv-pdf` marca una página **que se imprime**; el script del pipeline la
+  // descubre por ahí. Que exista al menos una es parte del criterio.
+  for (const anchorTag of html.matchAll(/<a[^>]*\sdata-cv-pdf="([^"]+)"[^>]*>/g)) {
+    if (!/\shref="/.test(anchorTag[0])) fail(value, 'declara `data-cv-pdf` sin `href`');
+    else printTargets += 1;
+  }
+  // Y aparte, **cualquier** enlace hacia un PDF del CV tiene que resolver — la
+  // página de contacto también enlaza uno, y sin esto nadie lo comprobaría.
+  for (const href of html.matchAll(/href="(\/cv\/[^"]+\.pdf)"/g)) {
+    cvLinks.push({ route: value, href: href[1] });
+  }
+}
+
+if (printTargets === 0) {
+  failures.push('/cv/: ninguna página construida declara `data-cv-pdf`');
+}
+if (cvLinks.length === 0) {
+  failures.push('/cv/: ninguna página construida enlaza un PDF del CV');
+}
+
+for (const link of cvLinks) {
+  try {
+    const info = await stat(path.join(dist, link.href.slice(1)));
+    if (info.size < 10_000) {
+      fail(link.route, `el PDF ${link.href} pesa ${info.size} bytes — no puede ser un CV`);
+    }
+  } catch {
+    fail(link.route, `enlaza ${link.href}, que no existe en dist/. El pipeline del PDF no corrió.`);
+  }
+}
+
+// Un árbol sucio ya no puede desfasar el PDF —se genera del working tree— pero
+// sí desfasa **la fecha que el CV muestra**: "Data actualizada" sale del último
+// commit que tocó la data (SPEC §7), así que con cambios sin commitear el
+// documento se anuncia más viejo de lo que es. No es un error, es un aviso.
+let dirty = '';
+try {
+  dirty = execFileSync('git', ['status', '--porcelain', '--', 'src/content/data'], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'ignore'],
+  }).trim();
+} catch {
+  dirty = '';
+}
+if (dirty !== '') {
+  console.warn(
+    '⚠ Hay cambios sin commitear en `src/content/data/`. El PDF sí los lleva —se genera en cada build—\n' +
+      '  pero la fecha "Data actualizada" sale del último commit, así que va a quedarse atrás.',
+  );
+}
+
 /* ----------------------------------------------------- archivos de soporte */
 
 for (const file of extraFiles) {
@@ -251,5 +337,5 @@ if (failures.length > 0) {
 console.log(
   `✓ ${expected.size} rutas derivadas del contenido y verificadas ` +
     `(${published.length} posts, ${siteProjects.length} proyectos, ${drafts.length} borrador(es) excluido(s)), ` +
-    `más ${extraFiles.length} archivos de soporte`,
+    `más ${extraFiles.length} archivos de soporte y ${cvLinks.length} PDF del CV`,
 );

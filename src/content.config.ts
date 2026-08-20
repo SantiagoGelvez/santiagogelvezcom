@@ -201,8 +201,23 @@ const profile = defineCollection({
       pais: z.string().min(1),
       /** Alias del dominio, rotable. Nunca el correo principal (ADR-0006). */
       correo: z.email().endsWith('@santiagogelvez.com', 'El correo público es un alias del dominio.'),
+      /**
+       * Los ~50 cursos de Platzi y Udemy, **agregados en una línea** (SPEC §12).
+       *
+       * Es un campo de texto y no una colección, y eso es la regla hecha
+       * estructura: un listado de 50 cursos junto a dos proyectos lee "estudió
+       * mucho, construyó poco", y en el PDF diluye la densidad de palabras clave
+       * que mide el ATS. Sin colección no hay dónde enumerarlos por descuido.
+       */
+      cursos: bilingual(z.string().min(1)),
+      /**
+       * `linkedin` es **opcional** a propósito: un enlace marcador es peor que
+       * la ausencia del enlace. Mientras no exista la URL real, el campo no
+       * está, y ni la página del CV ni el `sameAs` del JSON-LD pueden publicar
+       * una dirección que no lleva a ningún sitio.
+       */
       enlaces: z
-        .strictObject({ github: z.url(), linkedin: z.url(), platzi: z.url().optional() }),
+        .strictObject({ github: z.url(), linkedin: z.url().optional(), platzi: z.url().optional() }),
     }),
 });
 
@@ -288,7 +303,13 @@ const skills = defineCollection({
   schema: z
     .strictObject({
       id: z.string(),
-      nombre: z.string().min(1),
+      /**
+       * Bilingüe como el resto de la data (SPEC §6). En una herramienta las dos
+       * formas coinciden y se ve redundante, pero en una práctica no
+       * —"Modelado dimensional" / "Dimensional modeling"—, y con un solo campo
+       * el CV en inglés saldría con media lista en español.
+       */
+      nombre: bilingual(z.string().min(1)),
       categoria: z.enum([
         'lenguajes',
         'procesamiento',
@@ -308,7 +329,14 @@ const cvVariants = defineCollection({
     .strictObject({
       id: z.enum(['cv-datos', 'cv-itsm']),
       cargo_objetivo: bilingual(z.string().min(1)),
-      idioma: localeEnum,
+      /**
+       * En qué idiomas se genera esta variante. **Lista y no escalar**
+       * (ADR-0026): SPEC §6 lo describía en singular, pero ADR-0011 exige
+       * cuatro PDFs de `cv-datos` —público y completo, en español y en inglés—,
+       * así que una variante no puede tener *un* idioma. El idioma es un eje
+       * ortogonal a la variante, y el pipeline deriva sus salidas de aquí.
+       */
+      idiomas: z.array(localeEnum).nonempty('Una variante sin idiomas no produce ninguna salida.'),
       /** Criterio de filtrado: qué valor de `visible_en` selecciona esta salida. */
       filtro: z.enum(['cv-datos', 'cv-itsm']),
       orden_secciones: z

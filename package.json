@@ -8,20 +8,24 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "astro build && node scripts/cv-pdf.mjs",
     "preview": "astro preview",
     "check": "astro check",
-    "verify": "astro build && node scripts/verify-routes.mjs",
-    "deploy": "astro build && node scripts/verify-routes.mjs && wrangler deploy"
+    "verify": "npm run build && node scripts/verify-routes.mjs && node scripts/check-cv-pdf.mjs",
+    "cv:full": "npm run build && node scripts/cv-pdf.mjs --full && node scripts/check-cv-pdf.mjs --full",
+    "cv:check": "node scripts/check-cv-pdf.mjs",
+    "deploy": "npm run verify && wrangler deploy"
   },
   "dependencies": {
-    "astro": "7.2.4",
     "@astrojs/mdx": "7.0.7",
-    "@astrojs/sitemap": "3.7.3"
+    "@astrojs/sitemap": "3.7.3",
+    "astro": "7.2.4"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.10",
     "js-yaml": "4.3.1",
+    "pdfjs-dist": "6.2.108",
+    "playwright": "1.62.1",
     "typescript": "5.9.3",
     "wrangler": "4.124.0"
   }

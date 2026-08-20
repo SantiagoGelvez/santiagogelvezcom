@@ -651,3 +651,36 @@ h3 {
   letter-spacing: 0.02em;
   margin: var(--gap-m) 0 0;
 }
+
+/* ------------------------------------------------------------------ papel
+ *
+ * El mínimo para que cualquier página sea legible impresa. No es la hoja del
+ * CV —esa vive en `cv.css`, con las reglas del ATS—: es el arreglo de un
+ * defecto que afectaba a las 27 rutas. Los navegadores no imprimen fondos por
+ * defecto, así que sin esto el crema del texto salía sobre papel blanco y la
+ * página se imprimía en blanco sobre blanco.
+ */
+@media print {
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --rule: #999999;
+    --ink: #111111;
+    --muted: #444444;
+    --accent: #111111;
+    color-scheme: light;
+  }
+
+  body {
+    background: #ffffff;
+    color: #111111;
+  }
+
+  .skip {
+    display: none;
+  }
+
+  a {
+    text-decoration-color: currentColor;
+  }
+}

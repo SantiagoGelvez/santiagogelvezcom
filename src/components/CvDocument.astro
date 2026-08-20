@@ -1,0 +1,207 @@
+---
+import Band from '~/components/Band.astro';
+import { path, type Locale } from '~/i18n/routes';
+import { cv as t, cvSections, skillCategories, certificationStatus } from '~/i18n/ui';
+import { cvView, monthYear, period, SITE_VARIANT } from '~/lib/cv';
+import '~/styles/cv.css';
+
+/**
+ * El CV navegable: la primera de las tres salidas de SPEC §7 y la única que
+ * existe como página. Las otras dos —PDF público y PDF completo— **son esta
+ * misma página impresa** (ADR-0007), así que este archivo no puede tener nada
+ * que no deba salir en un PDF, y `cv.css` se encarga de lo que sobra al imprimir.
+ *
+ * Modo pieza (`Band`), que es donde el riel hace su trabajo: el margen anota lo
+ * que tiene al lado —titular, ciudad, fecha de la data— y cada `h2` de sección
+ * cuelga un nodo de la misma barra, que convierte el margen en el índice del
+ * documento (ADR-0023).
+ *
+ * Marcado pensado para el parser, no para el ojo (SPEC §7): una sola columna,
+ * encabezados estándar, cero iconos como portadores de información y cero
+ * tablas. Lo que un ATS necesita leer va en texto plano, en el orden en que se
+ * lee.
+ */
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const view = await cvView(SITE_VARIANT, locale);
+const { profile } = view;
+
+const present = t.present[locale];
+const contactLinks = [
+  { href: profile.enlaces.github, label: profile.enlaces.github.replace(/^https?:\/\//, '') },
+  ...(profile.enlaces.linkedin
+    ? [{ href: profile.enlaces.linkedin, label: profile.enlaces.linkedin.replace(/^https?:\/\//, '') }]
+    : []),
+];
+---
+
+<Band as="article" node>
+  {/*
+    El riel lleva **solo** lo que el cuerpo no dice. El titular y la ciudad ya
+    están abajo y ahí tienen que estar: al imprimir, el riel desaparece y el
+    documento debe bastarse solo. Repetirlos aquí era la duplicación visible
+    que ADR-0023 pide evitar — un margen anota, no hace eco.
+  */}
+  <Fragment slot="meta">
+    <p>
+      {t.dataUpdated[locale]}
+      {' '}
+      <time datetime={view.updated}>{monthYear(view.updated, locale)}</time>
+    </p>
+  </Fragment>
+
+  <div class="cv">
+    <h1>{profile.nombre}</h1>
+    {/*
+      El titular en su propio elemento y no dentro del `h1`: "Ingeniero de
+      Datos" es el string que el reclutador busca y que el parser mapea a un
+      campo (SPEC §7), así que necesita estar en el documento como una línea
+      propia y no fundido con el nombre.
+    */}
+    <p class="cv-headline">{profile.headline[locale]}</p>
+
+    {/*
+      Contacto en texto plano, en una línea, sin iconos: un icono de teléfono no
+      le dice nada a un parser. El separador es un punto medio y no una tabla.
+
+      **Ninguna ruta del sitio publica el correo** (ADR-0029). Lo que se
+      despliega lleva dos ranuras vacías, y las rellena el navegador un instante
+      antes de imprimir. Es el mismo mecanismo de ADR-0027 con dos niveles:
+
+      - `data-cv-print` → el alias del dominio, desde `perfil.yml`. Entra a los
+        cuatro PDF. Es un valor publicable; lo que no puede es aparecer en HTML,
+        donde se cosecha en semanas (SPEC §11).
+      - `data-cv-private` → el teléfono, desde un archivo ignorado por git.
+        Entra solo a los dos PDF completos (ADR-0006).
+
+      Los separadores van en el marcado y no en un `::before` de CSS: un
+      pseudo-elemento de un `<a>` hereda su subrayado y su color, así que el
+      punto medio salía subrayado en cobre como si fuera parte del enlace, y el
+      subrayado es justamente lo que aquí distingue un enlace de un texto (WCAG
+      1.4.1). Los de las dos ranuras viajan con el valor desde el script, porque
+      una ranura vacía no puede dejar un punto suelto en la línea.
+    */}
+    <p class="cv-contact">
+      <span>{profile.ciudad}, {profile.pais}</span>
+      {contactLinks.map((link) => (
+        <Fragment>{' · '}<a href={link.href}>{link.label}</a></Fragment>
+      ))}
+      <span class="cv-print" data-cv-print="correo" hidden></span>
+      <span class="cv-private" data-cv-private="telefono" hidden></span>
+      {/*
+        En pantalla, el correo no está y el lector necesita saber a dónde ir.
+        Este enlace es el que sobra en el papel: dentro de un PDF, "escríbeme
+        por el formulario" compite con el correo impreso justo al lado.
+      */}
+      <span class="cv-contact-cta">
+        {' · '}
+        <a href={path(locale, 'contact')}>{t.howToReach[locale]}</a>
+      </span>
+    </p>
+
+    <p class="cv-actions">
+      <a href={view.pdf} data-cv-pdf={`${view.variant}:${locale}`} download>{t.downloadPdf[locale]}</a>
+    </p>
+
+    {view.sections.map((section) => (
+      <section class="cv-section" aria-labelledby={`cv-${section}`}>
+        <h2 id={`cv-${section}`}>{cvSections[section][locale]}</h2>
+
+        {section === 'perfil' && (
+          <Fragment>
+            <p>{profile.resumen[locale]}</p>
+            {/* Los ~50 cursos, en una línea y nunca enumerados (SPEC §12). */}
+            <p class="cv-courses">
+              <strong>{t.courses[locale]}:</strong> {profile.cursos[locale]}
+            </p>
+          </Fragment>
+        )}
+
+        {section === 'experiencia' &&
+          view.experience.map((job) => (
+            <article class="cv-item">
+              <h3>{job.cargo[locale]} · {job.empresa}</h3>
+              <p class="cv-dates">{period(job.inicio, job.fin, locale, present)}</p>
+              <p>{job.descripcion[locale]}</p>
+              <ul class="cv-bullets">
+                {job.logros[locale].map((logro) => <li>{logro}</li>)}
+              </ul>
+              {job.stack.length > 0 && <p class="cv-stack">{job.stack.join(' · ')}</p>}
+            </article>
+          ))}
+
+        {section === 'proyectos' &&
+          view.projects.map(({ record, slug }) => (
+            <article class="cv-item">
+              <h3>
+                <a href={path(locale, 'projects', slug)}>{record.entry.data.titulo[locale]}</a>
+              </h3>
+              <p class="cv-dates">
+                {period(record.entry.data.periodo.inicio, record.entry.data.periodo.fin, locale, present)}
+                {' · '}
+                {record.entry.data.rol[locale]}
+              </p>
+              <p>{record.entry.data.resumen[locale]}</p>
+              <p class="cv-stack">{record.entry.data.stack.join(' · ')}</p>
+            </article>
+          ))}
+
+        {section === 'skills' && (
+          <ul class="cv-skills">
+            {view.skills.map((group) => (
+              <li>
+                <strong>{skillCategories[group.categoria][locale]}:</strong>
+                {' '}
+                {group.items.map((skill) => skill.nombre[locale]).join(' · ')}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {section === 'certificaciones' &&
+          view.certifications.map((cert) => (
+            <article class="cv-item cv-item--tight">
+              <h3>{cert.nombre}</h3>
+              <p class="cv-dates">
+                <span>{cert.emisor}</span>
+                {cert.obtencion && <Fragment>{' · '}{monthYear(cert.obtencion, locale)}</Fragment>}
+                {cert.vencimiento && (
+                  <Fragment>{' · '}{t.expires[locale]}{' '}{monthYear(cert.vencimiento, locale)}</Fragment>
+                )}
+                {/*
+                  El estado solo se dice cuando no es "obtenida". Escribir
+                  "Obtenida" junto a una fecha de obtención es redundancia que
+                  el parser tiene que descartar; `en-curso` sí es información.
+                */}
+                {cert.estado !== 'obtenida' && (
+                  <Fragment>{' · '}<span class="cv-status">{certificationStatus[cert.estado][locale]}</span></Fragment>
+                )}
+              </p>
+              {(cert.credencial || cert.verificacion) && (
+                <p class="cv-dates">
+                  {cert.credencial && <Fragment>{t.credential[locale]}: {cert.credencial}</Fragment>}
+                  {cert.credencial && cert.verificacion && ' · '}
+                  {cert.verificacion && <a href={cert.verificacion}>{t.verify[locale]}</a>}
+                </p>
+              )}
+            </article>
+          ))}
+
+        {section === 'educacion' &&
+          view.education.map((item) => (
+            <article class="cv-item cv-item--tight">
+              <h3>{item.titulo[locale]}</h3>
+              <p class="cv-dates">
+                {item.institucion}
+                {' · '}
+                {period(item.inicio, item.fin, locale, present)}
+              </p>
+            </article>
+          ))}
+      </section>
+    ))}
+  </div>
+</Band>

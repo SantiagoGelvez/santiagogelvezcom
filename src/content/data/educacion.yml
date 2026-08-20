@@ -1,8 +1,15 @@
-- id: ejemplo-pregrado
-  institucion: Institución de ejemplo
+# ⚠ DATA PROVISIONAL (fase 3). La institución, el título y el año de grado son
+# los reales; la fecha de inicio está estimada. Santiago la corrige.
+#
+# Una sola entrada, y es deliberado (SPEC §12): la formación formal es una
+# línea. Los cursos de Platzi y Udemy **no se enumeran** — van agregados en el
+# campo `cursos` de `perfil.yml`, que no tiene sitio donde crecer a 50 entradas.
+
+- id: uptc-electronica
+  institucion: Universidad Pedagógica y Tecnológica de Colombia (UPTC)
   titulo:
-    es: Título de ejemplo
-    en: Sample degree
-  inicio: "2018-01-01"
-  fin: "2022-12-31"
+    es: Ingeniero Electrónico
+    en: Electronic Engineer
+  inicio: "2013-02-04"
+  fin: "2018-12-14"
   visible_en: [sitio, cv-datos, cv-itsm]

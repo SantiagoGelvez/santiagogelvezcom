@@ -65,6 +65,34 @@ export const ui = {
   breadcrumb: { es: 'Ruta de navegación', en: 'Breadcrumb' },
   repository: { es: 'Repositorio', en: 'Repository' },
   demo: { es: 'Demo', en: 'Demo' },
+  /**
+   * Página de contacto (SPEC §5). El formulario llega en la fase 7 con su
+   * proveedor verificado; hasta entonces la página explica el orden en vez de
+   * ser una ruta de relleno.
+   *
+   * El párrafo sobre el correo no es una disculpa: es la clase de decisión que
+   * este sitio existe para mostrar. Un portafolio que argumenta sus decisiones
+   * puede argumentar también esta.
+   */
+  contactNoForm: {
+    es: 'Todavía no hay formulario. Llega con un proveedor que reenvíe y no almacene nada, que es una decisión que prefiero tomar despacio. Mientras tanto, dos caminos:',
+    en: 'There is no form yet. It lands with a provider that forwards and stores nothing, which is a decision worth taking slowly. In the meantime, two ways in:',
+  },
+  contactQuick: {
+    es: 'Para algo rápido —una pregunta, una corrección, un enlace roto— GitHub es el camino más corto.',
+    en: 'For something quick — a question, a correction, a broken link — GitHub is the shortest path.',
+  },
+  contactWork: {
+    es: 'Para hablar de trabajo, el CV en PDF lleva mis datos de contacto:',
+    en: 'To talk about work, the CV as a PDF carries my contact details:',
+  },
+  /** Texto del enlace al PDF desde la página de contacto. */
+  downloadCv: { es: 'descargar el CV en PDF', en: 'download the CV as a PDF' },
+  orReadItHere: { es: 'o leerlo aquí', en: 'or read it here' },
+  contactWhyNoEmail: {
+    es: 'Mi correo no está escrito en ninguna página de este sitio, y es a propósito: una dirección en texto plano se cosecha en semanas. Vive dentro del PDF, que es donde hace falta.',
+    en: 'My email address is written on no page of this site, and that is deliberate: a plain-text address gets harvested within weeks. It lives inside the PDF, which is where it is needed.',
+  },
   emptyCategory: {
     es: 'Todavía no hay posts en este tema.',
     en: 'There are no posts in this topic yet.',
@@ -75,6 +103,82 @@ export const ui = {
     en: 'That address does not exist. Try from the home page.',
   },
 } as const;
+
+/**
+ * Encabezados de sección del CV. **Vocabulario estándar y no creativo**: el PDF
+ * va directo a un ATS y el parser mapea "Experiencia" / "Experience" a un campo
+ * conocido (SPEC §7). Un encabezado ingenioso —"Dónde he estado"— es texto que
+ * el parser no clasifica, así que el contenido debajo se pierde.
+ *
+ * Las claves son las de `orden_secciones` en `variantes-cv.yml`: el orden lo
+ * decide la data, las etiquetas las decide este archivo.
+ */
+export const cvSections = {
+  perfil: { es: 'Perfil', en: 'Summary' },
+  experiencia: { es: 'Experiencia', en: 'Experience' },
+  proyectos: { es: 'Proyectos', en: 'Projects' },
+  skills: { es: 'Habilidades', en: 'Skills' },
+  certificaciones: { es: 'Certificaciones', en: 'Certifications' },
+  educacion: { es: 'Educación', en: 'Education' },
+} as const satisfies Record<string, Record<Locale, string>>;
+
+export type CvSectionKey = keyof typeof cvSections;
+
+/** Categorías de skills. El vocabulario lo cierra el esquema (SPEC §6). */
+export const skillCategories = {
+  lenguajes: { es: 'Lenguajes', en: 'Languages' },
+  procesamiento: { es: 'Procesamiento', en: 'Processing' },
+  orquestacion: { es: 'Orquestación', en: 'Orchestration' },
+  almacenamiento: { es: 'Almacenamiento', en: 'Storage' },
+  cloud: { es: 'Cloud', en: 'Cloud' },
+  bi: { es: 'BI', en: 'BI' },
+  practicas: { es: 'Prácticas', en: 'Practices' },
+} as const satisfies Record<string, Record<Locale, string>>;
+
+/** Estado de una certificación. `en-curso` comunica trayectoria activa (SPEC §6). */
+export const certificationStatus = {
+  obtenida: { es: 'Obtenida', en: 'Earned' },
+  'en-curso': { es: 'En curso', en: 'In progress' },
+  planeada: { es: 'Planeada', en: 'Planned' },
+} as const satisfies Record<string, Record<Locale, string>>;
+
+/**
+ * Nombres de mes abreviados, escritos a mano y no derivados de `Intl`.
+ *
+ * `Intl.DateTimeFormat` da resultados distintos según los datos de ICU del Node
+ * que corra el build, y en español abrevia con punto ("ago.") de forma
+ * inconsistente entre versiones. Un CV cuyas fechas cambian de forma según la
+ * máquina que lo generó no es aceptable, y son veinticuatro cadenas.
+ */
+export const months: Record<Locale, readonly string[]> = {
+  es: ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'],
+  en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+};
+
+/** Cadenas del CV y de su pipeline de PDF. */
+export const cv = {
+  /** Empleo o proyecto sin fecha de fin. */
+  present: { es: 'Actualidad', en: 'Present' },
+  downloadPdf: { es: 'Descargar en PDF', en: 'Download as PDF' },
+  /**
+   * Fecha de actualización, derivada del `git log` de los archivos de data y
+   * nunca de la fecha de build (SPEC §7). Si saliera del build, el CV se vería
+   * "actualizado" cada vez que se publica un post sin haberlo tocado.
+   */
+  dataUpdated: { es: 'Data actualizada', en: 'Data updated' },
+  credential: { es: 'Credencial', en: 'Credential' },
+  verify: { es: 'Verificar', en: 'Verify' },
+  expires: { es: 'Vence', en: 'Expires' },
+  /** Cursos agregados en una línea (SPEC §12). Nunca enumerados. */
+  courses: { es: 'Formación continua', en: 'Continuing education' },
+  /** Encabezado del bloque de contacto del PDF. */
+  contact: { es: 'Contacto', en: 'Contact' },
+  /**
+   * Reemplaza al correo en pantalla (ADR-0029). Se oculta al imprimir: dentro
+   * del PDF el correo ya está impreso al lado, y este enlace sobraría.
+   */
+  howToReach: { es: 'Cómo contactarme', en: 'How to reach me' },
+} as const satisfies Record<string, Record<Locale, string>>;
 
 /**
  * Estado de un proyecto, para el chip de la tarjeta. El vocabulario es cerrado
@@ -118,8 +222,8 @@ export const pageDescriptions: Record<SectionKey, Record<Locale, string>> = {
     en: 'Résumé of Santiago Gelvez, Data Engineer: experience, education, certifications, and stack. Browsable version, downloadable as a PDF.',
   },
   contact: {
-    es: 'Cómo contactar a Santiago Gelvez, Ingeniero de Datos en Duitama, Boyacá, Colombia. Formulario de contacto y enlaces a GitHub y LinkedIn.',
-    en: 'How to reach Santiago Gelvez, Data Engineer based in Duitama, Boyacá, Colombia. Contact form plus links to GitHub and LinkedIn.',
+    es: 'Cómo contactar a Santiago Gelvez, Ingeniero de Datos en Duitama, Boyacá, Colombia. Mis datos de contacto van dentro del CV en PDF, no escritos en la web.',
+    en: 'How to reach Santiago Gelvez, Data Engineer based in Duitama, Boyacá, Colombia. My contact details live inside the CV as a PDF, not written on the web.',
   },
   privacy: {
     es: 'Qué datos recoge este sitio, quién los procesa y por cuánto tiempo. Analítica sin cookies y un formulario de contacto que no almacena nada.',

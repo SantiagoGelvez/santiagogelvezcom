@@ -8,8 +8,9 @@ estructura —las diez secciones en ambos idiomas, 27 rutas— con contenido de 
 mientras se desarrolla v1. El contenido y la data se validan con esquemas en tiempo de
 build: un error de tipeo en una fecha rompe el build en vez de llegar a producción. El
 sistema de diseño está construido sobre tokens, con tipografías servidas desde el propio
-dominio y sin una línea de JavaScript. Lo que falta es el contenido real, el pipeline
-del CV y el sistema de diagramas.
+dominio y sin una línea de JavaScript. El CV navegable y sus cuatro PDF salen de la misma
+data, con una prueba automatizada que extrae el texto del PDF y comprueba que los campos
+privados no estén. Lo que falta es el contenido real y el sistema de diagramas.
 
 ---
 
@@ -22,7 +23,7 @@ del CV y el sistema de diagramas.
 | Contenido | Markdown/MDX validado con esquemas Zod en tiempo de build |
 | Diseño | CSS sobre tokens, sin framework. Tipografías autoalojadas, cero JavaScript |
 | SEO | Canonical, `hreflang` entre pares reales, `sitemap.xml`, JSON-LD y breadcrumbs |
-| PDF del CV | Generado imprimiendo la propia ruta `/cv/` con Playwright |
+| PDF del CV | Generado imprimiendo la propia ruta `/cv/` con Playwright, verificado con `pdfjs-dist` |
 | Analítica | Sin cookies, sin banner de consentimiento |
 | Costo | $0/mes |
 
@@ -38,11 +39,14 @@ docs/SPEC.md       Especificación: rutas, modelo de datos, plantillas, SEO
 src/content.config.ts  Esquemas Zod: lo que un dato tiene que cumplir
 src/content/       Contenido (MDX) y data (YAML), separados por tipo
 src/lib/content.ts Consultas y las reglas que un esquema no puede ver
+src/lib/cv.ts      El CV como vista sobre la data: filtrado, orden y nombres de archivo
 src/i18n/          Claves de traducción → segmentos de ruta por idioma
-src/styles/        tokens.css (color, tipografía, riel), base.css, prose.css
+src/styles/        tokens.css (color, tipografía, riel), base.css, prose.css, cv.css
 src/components/    Franja del riel, tarjeta de proyecto, entrada del blog, chips
 public/fonts/      Las .woff2 servidas desde el dominio, con su licencia OFL
 src/pages/{es,en}/ Un archivo por ruta; el árbol se lee como el mapa del sitio
+scripts/           verify-routes (criterio de terminado), cv-pdf, check-cv-pdf
+.github/workflows/ El despliegue: construye, genera los PDF y publica (ADR-0030)
 ```
 
 Todo el color y toda la tipografía salen de `src/styles/tokens.css`; el resto del CSS no
@@ -61,7 +65,8 @@ coordenada en todas las páginas.
 ```
 npm install
 npm run dev       # servidor de desarrollo
-npm run verify    # build + comprueba las rutas, hreflang, canonical y títulos
+npm run build     # sitio completo: HTML + los dos PDF del CV, todo en dist/
+npm run verify    # build + rutas, hreflang, canonical, títulos y la prueba ATS del PDF
 npm run check     # TypeScript sobre los archivos .astro
 ```
 
@@ -69,6 +74,23 @@ npm run check     # TypeScript sobre los archivos .astro
 esperadas del contenido y falla si al build le falta una **o si le sobra**. Si una ruta
 del mapa del sitio deja de existir, o un `hreflang` apunta a una página que no está, el comando
 falla. La alternativa era una lista en un documento que nadie vuelve a leer.
+
+**Los PDF del CV los genera `npm run build`**, en cada compilación, dentro de `dist/cv/`.
+No se versionan y no hay comando aparte que recordar: un PDF más viejo que la data no es
+posible, porque salen del mismo build que el HTML (ADR-0030).
+
+```
+npm run cv:full   # los dos PDF completos, con teléfono, en cv-out/ — solo en local
+npm run cv:check  # solo la prueba ATS sobre los PDF que ya existen
+```
+
+`cv:full` necesita `src/content/data/perfil.private.yml`, que está en `.gitignore` y no
+existe en un clon recién hecho. Se copia de `perfil.private.example.yml`.
+
+**El despliegue corre en GitHub Actions**, no en Workers Builds de Cloudflare, por una sola
+razón: imprimir el CV exige un Chromium y la imagen de build de Cloudflare no puede tener
+uno —Ubuntu sin `sudo` ni `apt-get`, sin librerías de navegador—. El push a `main` sigue
+publicando; lo que cambió es quién construye.
 
 ## Cómo agregar contenido
 
@@ -122,7 +144,21 @@ hacerse públicos. Un dato se corrige en un solo lugar.
 **El PDF se diseña para el parser, no para el ojo.** Va directo a sistemas ATS: una
 columna, texto seleccionable real, encabezados de sección estándar, sin tablas ni
 iconos que carguen información. Hay una prueba automatizada que extrae el texto del PDF
-y verifica que los encabezados estén y que los campos privados no.
+y verifica que los encabezados estén, que el orden de lectura no delate dos columnas, y
+que los campos privados no aparezcan.
+
+**Los datos de contacto no están en el HTML.** Ni el correo ni el teléfono se renderizan
+en ninguna de las 27 rutas: la página lleva ranuras vacías que se rellenan en el navegador
+un instante antes de imprimir el PDF. Son dos niveles con alcances distintos —el teléfono
+vive fuera del repositorio y solo entra a los PDF completos (ADR-0027); el correo vive en
+`perfil.yml` y entra a los cuatro, pero nunca al HTML (ADR-0029)—.
+
+No es ofuscación. La dirección no está escrita en ningún sitio que un robot visite gratis,
+y `npm run verify` **falla** si alguna página construida contiene `mailto:` o el alias. La
+otra mitad del invariante es igual de importante: la prueba del PDF falla si el correo
+**no** está, porque un CV sin datos de contacto crea una ficha de ATS a la que nadie puede
+responder. Y la defensa de fondo no es esconder: el alias es rotable, así que si se cosecha
+se borra y se crea otro.
 
 ## Decisiones
 

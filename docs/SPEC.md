@@ -130,7 +130,7 @@ Un registro puede estar en `visible_en: [sitio, cv-datos]` y aun así tener camp
 
 ### Entidades
 
-**`perfil`** — nombre, headline (es/en), resumen (es/en), ciudad, país, enlaces (GitHub, LinkedIn, Platzi), correo de contacto.
+**`perfil`** — nombre, headline (es/en), resumen (es/en), ciudad, país, enlaces (GitHub, LinkedIn, Platzi — los dos últimos opcionales), correo de contacto, y **`cursos` (es/en): los ~50 cursos de Platzi y Udemy agregados en una línea**. Ese campo es la regla de §12 hecha estructura — no existe una colección de cursos donde puedan enumerarse por descuido.
 
 **`experiencia[]`** — empresa, cargo (es/en), fecha inicio, fecha fin (vacío = actual), modalidad, descripción (es/en), logros[] (viñetas, es/en), stack[], `visible_en[]`.
 
@@ -142,7 +142,7 @@ Un registro puede estar en `visible_en: [sitio, cv-datos]` y aun así tener camp
 
 > El estado `en-curso` es deliberado: mostrar el DEA-C01 en progreso comunica trayectoria activa.
 
-**`skills[]`** — nombre, categoría (lenguajes, procesamiento, orquestación, almacenamiento, cloud, BI, prácticas).
+**`skills[]`** — nombre (es/en), categoría (lenguajes, procesamiento, orquestación, almacenamiento, cloud, BI, prácticas). El nombre es bilingüe como el resto de la data: en una herramienta las dos formas coinciden, pero en una práctica no —"Modelado dimensional" / "Dimensional modeling"— y con un solo campo el CV en inglés saldría con media lista en español.
 
 > **Sin niveles, sin porcentajes, sin barras de progreso.** "Python 85%" es una de las señales más confiables de portafolio junior.
 
@@ -150,7 +150,9 @@ Un registro puede estar en `visible_en: [sitio, cv-datos]` y aun así tener camp
 
 **`posts`** (frontmatter) — slug, título, resumen, fecha de publicación, fecha de actualización, categoría, tags[], idioma, `clave_traduccion`, proyecto relacionado, estado (`borrador` / `publicado`).
 
-**`variantes_cv[]`** — id, cargo objetivo, idioma, criterio de filtrado, orden de secciones.
+**`variantes_cv[]`** — id, cargo objetivo, **`idiomas[]`**, criterio de filtrado, orden de secciones.
+
+> **Corregido por ADR-0026:** este campo decía «idioma», en singular, y se escribió antes que ADR-0011. El idioma es un eje **ortogonal** a la variante —cada una se genera en los idiomas que declare—, así que un escalar no podía describir las cuatro salidas que ADR-0011 exige.
 
 ### Estrategia bilingüe por tipo
 
@@ -173,12 +175,16 @@ Cada campo del modelo lleva marca de si es público; el PDF público omite lo qu
 
 **Cuatro se generan, dos se despliegan.** Ver ADR-0011.
 
-| Variante | Idioma | ¿Dónde se genera? | ¿Se despliega? |
-|---|---|---|---|
-| `cv-datos` público | es | en build | Sí, enlazado |
-| `cv-datos` público | en | en build | Sí, enlazado |
-| `cv-datos` completo | es | **solo en local** | **No** |
-| `cv-datos` completo | en | **solo en local** | **No** |
+| Variante | Idioma | ¿Dónde se genera? | ¿Dónde queda? | ¿Se despliega? |
+|---|---|---|---|---|
+| `cv-datos` público | es | en cada `npm run build` | `dist/cv/` | Sí, enlazado |
+| `cv-datos` público | en | en cada `npm run build` | `dist/cv/` | Sí, enlazado |
+| `cv-datos` completo | es | `npm run cv:full`, solo local | `cv-out/`, ignorado por git | **No** |
+| `cv-datos` completo | en | `npm run cv:full`, solo local | `cv-out/`, ignorado por git | **No** |
+
+**Nada de lo que produce el pipeline se versiona** (ADR-0030). Los PDF salen del mismo build que el HTML, así que **no puede existir un PDF más viejo que la data**: no hay comando aparte que olvidar. `npm run verify` comprueba que el PDF que la página promete exista, que es el modo de fallo que queda.
+
+> El precio es que el build necesita un Chromium, y la imagen de build de Cloudflare no puede tenerlo —Ubuntu sin `sudo` ni `apt-get`, sin librerías de navegador—. Por eso el despliegue corre en GitHub Actions y Workers Builds está desconectado. Ver ADR-0030, que reemplaza a ADR-0028.
 
 `cv-itsm` queda registrado en `variantes_cv[]` pero no se genera hasta que se necesite: una vez existe el pipeline, la variante extra cuesta minutos.
 
@@ -205,7 +211,22 @@ El PDF va directo a sistemas ATS. Diseña para el parser, no para el ojo:
 
 Eso obliga a una **hoja de estilos de impresión, que no es opcional por dos razones**: alimenta el pipeline de PDF, y sin ella un reclutador que haga Ctrl+P sobre `/es/cv/` imprime el modo oscuro. Se paga una vez y sirve dos veces.
 
-**La prueba de compatibilidad ATS es un script automatizado, no una revisión a ojo.** Extrae el texto del PDF (`pdftotext`) y verifica que aparezcan los encabezados de sección estándar y que **el teléfono no aparezca en las variantes públicas**. Corre en CI.
+**Los datos de contacto entran en el navegador, no en el build.** La página renderiza ranuras vacías y el pipeline las rellena con Playwright un instante antes de imprimir. Son dos niveles, con orígenes y alcances distintos:
+
+| Ranura | Valor | Origen | Entra a | ¿En HTML? |
+|---|---|---|---|---|
+| `data-cv-print` | correo | `perfil.yml`, versionado | los cuatro PDF | **nunca** |
+| `data-cv-private` | teléfono | `perfil.private.yml`, ignorado | solo los completos | **nunca** |
+
+El teléfono no es publicable en absoluto, así que vive fuera del repositorio y no existe nunca dentro de `src/` ni de `dist/` (ADR-0027). El correo sí es publicable —es el alias rotable— pero no puede aparecer en HTML, donde se cosecha en semanas (§11): por eso vive en un archivo versionado y aun así sale del sitio (ADR-0029).
+
+**En el PDF el correo va como texto plano, no como enlace `mailto:`.** Un enlace guarda su URI **sin comprimir** en la anotación del PDF, así que `grep` lo encontraba dentro de un archivo que se versiona en un repositorio público. Como texto plano queda en el stream comprimido, igual que el teléfono, y el ATS lo lee igual.
+
+**La prueba de compatibilidad ATS es un script automatizado, no una revisión a ojo.** `scripts/check-cv-pdf.mjs` extrae el texto del PDF y verifica que aparezcan los encabezados de sección estándar, que el orden de lectura sea el del documento —así se detecta una maquetación en dos columnas—, que no pase de dos páginas, que **el correo sí esté** y que **el teléfono no aparezca en las variantes públicas**. Corre dentro de `npm run verify`, así que guarda cada despliegue.
+
+> Las dos mitades del correo son igual de importantes. `verify-routes.mjs` falla si alguna página construida lo contiene; `check-cv-pdf.mjs` falla si el PDF **no** lo contiene. Sin la segunda, un fallo silencioso de la inyección publicaría un CV que crea una ficha de ATS a la que nadie puede responder — peor que el spam que la primera evita.
+
+> La extracción va con `pdfjs-dist` y no con `pdftotext`: `pdftotext` exige poppler instalado en el sistema, así que la prueba pasaría o no según la máquina. Un criterio de terminado que depende de un `apt install` no es un criterio de terminado.
 
 ### El titular
 
@@ -335,6 +356,12 @@ Teléfono, dirección exacta, número de documento, fecha de nacimiento, firma e
 
 Nunca en texto plano — se cosecha en semanas. Usar un alias del dominio dedicado al sitio, rotable si se llena de spam. Nunca mi correo principal de Workspace.
 
+**Implementado en la fase 3 como invariante, no como intención (ADR-0029).** Ninguna ruta del sitio publica el correo: `verify-routes.mjs` falla si alguna página construida contiene `mailto:` o el alias. La dirección vive únicamente dentro del PDF, donde entra por inyección (§7). La página `/contacto/` explica ese orden mientras llega el formulario.
+
+Esta regla estaba escrita desde el principio y aun así la página del CV la incumplió el primer día que se escribió. Es el argumento de por qué las reglas de privacidad de este proyecto terminan en un script y no en un documento.
+
+**La defensa de fondo no es esconder la dirección, es que sea desechable.** El alias es rotable: si se cosecha, se borra y se crea otro. Ninguna ofuscación resiste a un cosechador con navegador headless; un alias con vida útil sí acota el daño.
+
 ### Formulario de contacto
 
 Que **reenvíe y olvide**. No almacenar mensajes en ninguna parte. Datos que no guardo son datos que no tengo que proteger, declarar ni borrar cuando alguien lo pida. Usar un servicio de formularios que reenvíe por correo, sin backend propio.
@@ -450,9 +477,9 @@ El sitio está listo para publicar cuando:
 1. ◐ *Estructura cumplida en las fases 1a y 1b:* las diez secciones de §5 existen en español e inglés —27 rutas con la taxonomía real—, responden 200 en producción y `npm run verify` las deriva del contenido en cada build. El contenido y la data se validan con esquemas: un error de tipeo rompe el build. Falta el contenido real, no el mecanismo.
 2. ◐ *Mecanismo cumplido en la fase 1a:* el selector resuelve por clave de traducción y el caso sin traducción está construido y verificado contra una pieza de relleno. Queda ejercitarlo con contenido real.
 3. Los dos casos de estudio están publicados **en ambos idiomas** y los dos posts en español, con el cruce entre ellos.
-4. `/es/cv/` y `/en/cv/` renderizan desde la data. Los **dos PDFs públicos** se generan en build y pasan la prueba automatizada de extracción de texto; los dos completos se generan en local con el mismo pipeline.
-5. La prueba de extracción confirma que **el teléfono no aparece en ninguna variante pública**, y los PDFs completos no están en el directorio desplegado ni en el repositorio.
-6. La hoja de estilos de impresión existe: Ctrl+P sobre `/es/cv/` produce una página legible.
+4. ◐ *Mecanismo cumplido en la fase 3:* `/es/cv/` y `/en/cv/` renderizan desde la data, y los cuatro PDF salen de imprimir esas mismas rutas. Los **dos públicos** se generan en cada `npm run build` y pasan la prueba automatizada de extracción de texto dentro de `npm run verify`; los dos completos salen de `npm run cv:full` con el mismo pipeline. Nada generado se versiona, así que un PDF desfasado no es posible. Falta la data real, no el mecanismo.
+5. ✅ *Cumplido en la fase 3:* la prueba de extracción confirma que **el teléfono no aparece en ninguna variante pública**, y los PDF completos no están en el directorio desplegado ni en el repositorio — el script lo comprueba sobre el disco después de correr, no confiando en su propia lógica.
+6. ✅ *Cumplido en la fase 3:* la hoja de estilos de impresión existe y Ctrl+P sobre `/es/cv/` produce una página legible. El mínimo para no imprimir texto crema sobre papel blanco se aplica además a las 27 rutas, no solo al CV.
 7. ◐ *Mecanismo cumplido en la fase 1b:* sitemap, robots, canonical, `hreflang` y JSON-LD verificados, y las categorías con menos de 3 posts salen con `noindex` —evaluado por idioma contra el conteo real y comprobado en producción—. Se vuelve a verificar cuando haya contenido real y los conteos cambien.
 8. El formulario de contacto entrega correo y no almacena nada —verificado en la documentación del proveedor—; la página de privacidad existe, está enlazada y nombra al proveedor y a la analítica.
 9. La analítica sin cookies está instalada.

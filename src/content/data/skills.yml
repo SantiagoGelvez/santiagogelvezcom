@@ -1,14 +1,101 @@
 # Sin niveles, sin porcentajes, sin barras de progreso (SPEC §6). El esquema no
 # tiene dónde ponerlos, así que no se pueden agregar por descuido.
+#
+# `nombre` es bilingüe como el resto de la data (SPEC §6, "campos bilingües en
+# línea"). En una herramienta las dos formas coinciden y se ve redundante; en
+# una práctica no —"Modelado dimensional" / "Dimensional modeling"— y sin el
+# campo el CV en inglés saldría con media lista en español.
+#
+# ⚠ La selección es provisional: refleja la trayectoria real (datos → fullstack
+# → ITSM) pero Santiago decide qué se queda. Regla al podarla: aquí solo va lo
+# que se pueda defender en una entrevista.
+
+# ------------------------------------------------------------------ lenguajes
 - id: python
-  nombre: Python
+  nombre: { es: Python, en: Python }
   categoria: lenguajes
   visible_en: [sitio, cv-datos, cv-itsm]
 - id: sql
-  nombre: SQL
+  nombre: { es: SQL, en: SQL }
   categoria: lenguajes
   visible_en: [sitio, cv-datos, cv-itsm]
+- id: typescript
+  nombre: { es: TypeScript, en: TypeScript }
+  categoria: lenguajes
+  visible_en: [sitio, cv-datos, cv-itsm]
+
+# --------------------------------------------------------------- procesamiento
+- id: pyspark
+  nombre: { es: PySpark, en: PySpark }
+  categoria: procesamiento
+  visible_en: [sitio, cv-datos]
+- id: dbt
+  nombre: { es: dbt, en: dbt }
+  categoria: procesamiento
+  visible_en: [sitio, cv-datos]
+- id: pandas
+  nombre: { es: pandas, en: pandas }
+  categoria: procesamiento
+  visible_en: [sitio, cv-datos]
+
+# --------------------------------------------------------------- orquestación
 - id: airflow
-  nombre: Airflow
+  nombre: { es: Airflow, en: Airflow }
   categoria: orquestacion
   visible_en: [sitio, cv-datos]
+- id: databricks-workflows
+  nombre: { es: Databricks Workflows, en: Databricks Workflows }
+  categoria: orquestacion
+  visible_en: [sitio, cv-datos]
+
+# -------------------------------------------------------------- almacenamiento
+- id: delta-lake
+  nombre: { es: Delta Lake, en: Delta Lake }
+  categoria: almacenamiento
+  visible_en: [sitio, cv-datos]
+- id: postgresql
+  nombre: { es: PostgreSQL, en: PostgreSQL }
+  categoria: almacenamiento
+  visible_en: [sitio, cv-datos, cv-itsm]
+- id: s3
+  nombre: { es: Amazon S3, en: Amazon S3 }
+  categoria: almacenamiento
+  visible_en: [sitio, cv-datos]
+
+# ---------------------------------------------------------------------- cloud
+- id: aws
+  nombre: { es: AWS, en: AWS }
+  categoria: cloud
+  visible_en: [sitio, cv-datos, cv-itsm]
+- id: databricks
+  nombre: { es: Databricks, en: Databricks }
+  categoria: cloud
+  visible_en: [sitio, cv-datos]
+
+# ------------------------------------------------------------------------- bi
+- id: power-bi
+  nombre: { es: Power BI, en: Power BI }
+  categoria: bi
+  visible_en: [sitio, cv-datos, cv-itsm]
+
+# -------------------------------------------------------------------- prácticas
+- id: modelado-dimensional
+  nombre: { es: Modelado dimensional, en: Dimensional modeling }
+  categoria: practicas
+  visible_en: [sitio, cv-datos]
+- id: arquitectura-medallion
+  nombre: { es: Arquitectura medallion, en: Medallion architecture }
+  categoria: practicas
+  visible_en: [sitio, cv-datos]
+- id: calidad-de-datos
+  nombre: { es: Calidad de datos, en: Data quality }
+  categoria: practicas
+  visible_en: [sitio, cv-datos]
+- id: ci-cd
+  nombre: { es: Integración y despliegue continuos, en: CI/CD }
+  categoria: practicas
+  visible_en: [sitio, cv-datos, cv-itsm]
+- id: itil
+  nombre: { es: Prácticas ITIL, en: ITIL practices }
+  categoria: practicas
+  visible_en: [sitio, cv-itsm]

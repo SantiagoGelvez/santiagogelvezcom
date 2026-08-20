@@ -1,0 +1,306 @@
+/*
+ * El CV: pantalla e impresión en el mismo archivo, a propósito.
+ *
+ * Las tres salidas de SPEC §7 son **este marcado** — la página navegable, el
+ * PDF público y el PDF completo (ADR-0007)—, así que separar los estilos de
+ * impresión en otro archivo solo garantizaría que se olviden al cambiar la
+ * pantalla. Aquí, cada regla de pantalla tiene su contraparte de papel a la
+ * vista.
+ *
+ * Importado desde `CvDocument.astro` y no desde el layout: es la única ruta que
+ * lo usa, así que no pesa en las otras 26.
+ */
+
+.cv-headline {
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: calc(-1 * var(--gap-s)) 0 var(--gap-m);
+}
+
+/* Contacto en una línea, con el punto medio como separador. No es una tabla ni
+   una rejilla: para el parser tiene que ser texto corrido. */
+.cv-contact {
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  line-height: 1.8;
+  margin: 0 0 var(--gap-m);
+}
+
+/* Los separadores son nodos de texto del marcado, no `::before` de CSS: el
+   pseudo-elemento de un enlace hereda su subrayado y el punto medio salía
+   subrayado en cobre, como si formara parte del enlace.
+
+   Las dos ranuras —el correo de ADR-0029 y el teléfono de ADR-0027— traen su
+   propio separador desde el script, por la misma razón: si se quedan vacías no
+   deben dejar un punto suelto. Ninguna declara `display`, para que el `hidden`
+   del marcado las oculte de verdad. */
+.cv-print,
+.cv-private {
+  color: var(--ink);
+}
+
+.cv-actions {
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  margin: 0 0 var(--gap-l);
+}
+
+/* Cada sección es otro nodo de la barra de la pieza, igual que un `h2` de
+   `.prose`: el margen se vuelve el índice del documento sin una tabla de
+   contenidos flotante. */
+.cv-section {
+  position: relative;
+  margin-top: var(--gap-l);
+}
+
+.cv-section > h2 {
+  position: relative;
+  margin-bottom: var(--gap-m);
+}
+
+.cv-section > h2::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--rail-gap) - 3px);
+  top: 0.55em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rule);
+  box-shadow: 0 0 0 3px var(--bg);
+}
+
+.cv-item {
+  margin-bottom: var(--gap-m);
+}
+
+.cv-item:last-child {
+  margin-bottom: 0;
+}
+
+.cv-item--tight {
+  margin-bottom: var(--gap-s);
+}
+
+.cv-item h3 {
+  margin-bottom: 0;
+}
+
+.cv-item h3 a {
+  color: var(--ink);
+  text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.cv-item h3 a:hover {
+  color: var(--accent);
+}
+
+/* Fechas, emisor, stack: metadatos, así que mono y tenue como en todo el sitio. */
+.cv-dates,
+.cv-stack {
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  color: var(--muted);
+  margin: 0 0 var(--gap-xs);
+}
+
+.cv-stack {
+  margin-top: var(--gap-xs);
+}
+
+.cv-status {
+  color: var(--accent);
+}
+
+.cv-section p {
+  margin: 0 0 var(--gap-s);
+}
+
+.cv-bullets,
+.cv-skills {
+  margin: 0 0 var(--gap-s);
+  padding-left: 1.15rem;
+}
+
+.cv-bullets li,
+.cv-skills li {
+  margin-bottom: var(--gap-xs);
+}
+
+.cv-bullets li::marker,
+.cv-skills li::marker {
+  color: var(--rule);
+}
+
+/* Las skills son una lista de categorías, no una nube de etiquetas: el ATS lee
+   "Lenguajes: Python · SQL" y sabe qué está clasificando. Sin barras de
+   progreso y sin porcentajes — el esquema tampoco tiene dónde ponerlos. */
+.cv-skills {
+  list-style: none;
+  padding-left: 0;
+}
+
+.cv-courses strong,
+.cv-skills strong {
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------ papel
+ *
+ * Reglas del PDF, obligatorias (SPEC §7). El PDF va a un ATS: se diseña para el
+ * parser, no para el ojo.
+ *
+ * - **Una sola columna.** El riel es una segunda columna, así que aquí colapsa.
+ *   Un parser que encuentre dos columnas puede intercalar sus líneas y arruinar
+ *   el documento entero.
+ * - **Texto seleccionable real**, que sale gratis por imprimir HTML.
+ * - Sin tablas, sin cajas y sin iconos que carguen información.
+ * - **Nada crítico en encabezado ni pie**: muchos parsers los descartan. Aquí no
+ *   se imprime ni la cabecera del sitio ni el pie, y Playwright genera el PDF
+ *   sin encabezado ni pie de navegador.
+ */
+@media print {
+  @page {
+    /* Carta: es el tamaño de Colombia y de Estados Unidos, los dos mercados a
+       los que va este documento. */
+    size: Letter;
+    margin: 14mm 15mm;
+  }
+
+  /* Tinta sobre papel. Los tokens se redefinen en vez de sobrescribir reglas:
+     el sistema entero cambia de paleta con seis valores, que es exactamente
+     para lo que se diseñaron (ADR-0021). */
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --rule: #999999;
+    --ink: #111111;
+    --muted: #444444;
+    --accent: #111111;
+    --rail: 0rem;
+    --rail-gap: 0rem;
+    --measure: none;
+    --frame: none;
+    color-scheme: light;
+  }
+
+  body {
+    background: #ffffff;
+    color: #111111;
+    font-size: 10pt;
+    line-height: 1.45;
+  }
+
+  /* Cromo del sitio: no es el CV. La ranura privada sí sobrevive — cuando tiene
+     algo dentro es justamente lo que este PDF viene a llevar. */
+  header.site,
+  footer.site,
+  .skip,
+  .cv-actions,
+  .cv-contact-cta,
+  .note {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  /* El riel colapsa: una sola columna, sin línea vertical y sin el margen
+     negativo que lo colgaba hacia afuera. */
+  .band {
+    display: block;
+    margin-left: 0;
+  }
+
+  .band-meta {
+    display: none;
+  }
+
+  .band-body {
+    border-left: 0;
+    padding: 0;
+    max-width: none;
+  }
+
+  .band--node > .band-body::before,
+  .cv-section > h2::before {
+    display: none;
+  }
+
+  .cv h1 {
+    font-size: 20pt;
+    line-height: 1.1;
+    margin-bottom: 2pt;
+  }
+
+  .cv-headline {
+    font-size: 10pt;
+    margin: 0 0 4pt;
+    color: #111111;
+  }
+
+  .cv-contact {
+    font-size: 8.5pt;
+    line-height: 1.5;
+    margin-bottom: 10pt;
+  }
+
+  .cv-section {
+    margin-top: 12pt;
+  }
+
+  .cv-section > h2 {
+    font-size: 12pt;
+    margin-bottom: 5pt;
+    padding-bottom: 2pt;
+    border-bottom: 0.5pt solid #999999;
+    /* Un encabezado de sección solo en la última línea de una página deja al
+       parser una etiqueta sin contenido debajo. */
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .cv-item h3 {
+    font-size: 10.5pt;
+  }
+
+  .cv-dates,
+  .cv-stack {
+    font-size: 8.5pt;
+    margin-bottom: 2pt;
+  }
+
+  .cv-item {
+    margin-bottom: 8pt;
+    /* Un empleo partido entre dos páginas se puede leer; su encabezado en una
+       página y sus viñetas en la otra, no. */
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .cv-section p {
+    margin-bottom: 4pt;
+  }
+
+  .cv-bullets,
+  .cv-skills {
+    margin-bottom: 4pt;
+  }
+
+  .cv-bullets li,
+  .cv-skills li {
+    margin-bottom: 2pt;
+  }
+
+  /* Los enlaces siguen siendo enlaces en el PDF —Chromium los conserva como
+     anotaciones— pero pierden el color: una tinta distinta no aporta nada en
+     papel y en pantalla ya se distinguen por el subrayado. */
+  .cv a {
+    color: #111111;
+    text-decoration: none;
+  }
+}
