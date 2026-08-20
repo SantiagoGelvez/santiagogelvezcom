@@ -7,6 +7,39 @@ Orden cronológico inverso — lo más reciente arriba.
 
 ---
 
+## ADR-0020 — El sitio no declara disponibilidad; se negocia por vacante
+
+**Fecha:** 2026-08-19
+
+**Decisión.** El sitio no dice nada sobre disponibilidad laboral: ni banner de "abierto
+a oportunidades", ni línea en el CV, ni estado en el home. La disponibilidad depende de
+la vacante concreta y se conversa en la entrevista. Esto responde la pregunta abierta
+que SPEC §16 dejó pendiente desde la fase 0.
+
+**Alternativas consideradas.** Un banner explícito en el home, que es lo que hace la
+mayoría de los portafolios y lo que un reclutador espera encontrar. Una línea discreta
+en `/contacto/` o en el CV, que dice lo mismo con menos ruido. Un campo en la data del
+perfil que se pudiera encender y apagar sin tocar plantillas.
+
+**Por qué.** La disponibilidad no es un valor constante: cambia con el rol, la
+modalidad, el salario y el momento. Declararla en el sitio la congela en una sola
+respuesta para todos los lectores, y además la responde **antes** de saber qué se está
+negociando, que es exactamente al revés de como conviene. Hay un segundo problema, más
+práctico: ese tipo de aviso envejece solo. Un "abierto a oportunidades" que sigue puesto
+seis meses después de haber aceptado un puesto es peor que no haber dicho nada, porque
+el sitio entero pierde credibilidad — y este sitio es, sobre todo, un argumento de
+credibilidad (ADR-0001).
+
+**Qué se sacrificó.** SPEC §3 dice que el home debe responder en diez segundos las
+preguntas de un reclutador, y "¿está disponible?" es una de las cuatro. Esa queda sin
+responder a propósito: el reclutador tiene que escribir para saberlo, y una fracción no
+lo hará. Se pierde también la señal de búsqueda activa que algunos filtros usan como
+criterio. La compensación es que el sitio no tiene que mantenerse al día con mi
+situación laboral para seguir siendo cierto — y por eso ADR-0013 ya había sacado el
+posicionamiento estratégico de los archivos versionados.
+
+---
+
 ## ADR-0019 — `verify-routes.mjs` deriva las rutas del contenido y duplica el mapa de secciones a propósito
 
 **Fecha:** 2026-08-19

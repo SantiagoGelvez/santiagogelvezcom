@@ -7,17 +7,20 @@ Estado del repositorio y siguiente paso. Se actualiza al final de cada sesión.
 ## Estado actual
 
 **Fecha:** 2026-08-19
-**Última sesión:** Apagado de la URL `workers.dev` y fase 1b — esquemas de contenido
+**Última sesión:** Fase 1b (esquemas), apagado de `workers.dev`, baja de AWS y cierre
+de los pendientes operativos
 **Estado del repo:** desplegado y en producción. `npm run verify` pasa en limpio y
 `astro check` sale con 0 errores, 0 avisos y 0 hints.
 `git@github.com:SantiagoGelvez/santiagogelvezcom.git` · rama `main` · público.
 **Fase del proyecto:** 0 y 1 completas. Siguiente: fase 2 (sistema de diseño).
+**Infraestructura:** cerrada. Solo Cloudflare, $0/mes, sin AWS y sin nada pendiente de
+desmontar. Lo único sin probar es el despliegue automático desde GitHub.
 
 ```
 santiagogelvezcom/
 ├── CLAUDE.md              Se carga solo en cada sesión. Índice + reglas permanentes
 ├── NEXT.md                Este archivo — dónde vamos
-├── DECISIONS.md           19 ADR registrados — por qué está así
+├── DECISIONS.md           20 ADR registrados — por qué está así
 ├── docs/SPEC.md           Especificación completa — qué construir
 ├── astro.config.mjs       Estático, i18n con prefijo explícito, mdx + sitemap
 ├── wrangler.jsonc         Worker de solo assets, sin `main` y sin URL workers.dev
@@ -120,19 +123,51 @@ No entra al sitio ni al build desplegado.
 
 ## Pendientes para mí (Santiago)
 
-1. **Conectar el repositorio en el panel de Cloudflare** para que el despliegue salga de
-   `git push`, con previews por rama. Hoy el deploy es manual con `npm run deploy`.
-   Requiere agregar `"preview_urls": true` a `wrangler.jsonc` — ver arriba.
+Los cuatro pendientes que traía la fase 1b están cerrados o decididos. Queda uno solo,
+y es de verificación:
 
-2. **Desmontar AWS.** El bucket sigue en pie como rollback del corte. Cuando lleve unos
-   días estable: vaciarlo, borrarlo y revisar que no quede nada más facturando. Ese era
-   el punto de mudarse (SPEC §4). **El build nunca vuelve a subir a S3.**
+1. **Probar la tubería de despliegue desde GitHub.** El repositorio ya está conectado en
+   el panel de Cloudflare y `wrangler.jsonc` ya lleva `"preview_urls": true`, pero
+   **nada de eso se ha ejercitado todavía**: los commits siguen sin subir, así que
+   Cloudflare nunca ha construido nada. Además `preview_urls` **está en el archivo pero
+   no en producción** —el último despliegue es anterior a ese cambio—, así que las
+   previews no funcionarán hasta que se despliegue esa configuración. El primer
+   `git push` es la prueba de las dos cosas. Ver "Cómo probarlo sin arriesgar
+   producción", abajo.
 
-3. **Decidir si el sitio declara disponibilidad explícita** ("abierto a oportunidades").
-   Es una decisión con consecuencias laborales, no de copy. Se necesita en la fase 6.
+**Cerrados en esta sesión:**
 
-4. **Fecha objetivo de publicación**, si hay una postulación o certificación que la
-   ancle. Cambia qué se recorta.
+- ✅ **AWS desmontado.** El bucket ya no existe y no queda nada facturando. Producción
+   sigue en pie y sin cabeceras `x-amz-*`, y el MX de Workspace responde
+   `1 smtp.google.com`. Ese era el punto de mudarse (SPEC §4).
+- ✅ **Repositorio conectado** en el panel de Cloudflare (falta la prueba del punto 1).
+- ✅ **Disponibilidad: el sitio no la declara.** Depende de la vacante y se conversa en
+   la entrevista. Queda registrado en **ADR-0020**, con lo que cuesta: SPEC §3 pide que
+   el home responda "¿está disponible?" en diez segundos, y deliberadamente no lo hace.
+   Cierra la última pregunta abierta que arrastraba SPEC §16 desde la fase 0.
+- ✅ **Fecha de publicación: no se fija una.** El sitio ya está en línea, así que no hay
+   un lanzamiento que planear — hay una data que completar. El trabajo restante se rige
+   por las fases, no por una fecha.
+
+### Cómo probarlo sin arriesgar producción
+
+`main` está **4 commits adelante de `origin/main`**. Si la conexión quedó apuntando a
+`main`, ese push va a construir y desplegar de una. Producción ya sirve exactamente ese
+código —se desplegó a mano con `npm run deploy`—, así que el riesgo real no es lo que se
+publique sino que la tubería falle a medias. Conviene, en este orden:
+
+1. Confirmar en el panel qué **comando de build** quedó configurado. La recomendación es
+   `npm run verify` y no `npm run build`: `verify` construye **y** comprueba las rutas,
+   así que un build que rompe el mapa del sitio no llega a desplegarse. Es gratis
+   convertir el criterio de terminado en la compuerta del despliegue.
+2. Empujar una rama cualquiera antes que `main`, para ver una preview sin tocar el apex.
+3. Solo entonces `git push origin main`, y comparar: la versión desplegada debe cambiar
+   y las 27 rutas seguir en 200.
+
+**Ojo con el doble despliegue:** si el comando de build configurado es `npm run deploy`,
+ese script ya corre `wrangler deploy` por dentro y chocaría con el despliegue que hace
+Cloudflare. `npm run deploy` es para desplegar a mano desde el portátil; la tubería debe
+construir y dejar que Cloudflare despliegue.
 
 ---
 
@@ -155,20 +190,38 @@ No entra al sitio ni al build desplegado.
 
 ## Siguiente sesión: fase 2 — sistema de diseño (bloque de 4 h)
 
-Las fundaciones están completas y verificadas. Lo que falta ahora no es estructura sino
-la dirección de SPEC §13, que hoy está representada por unos estilos provisionales que
-el propio archivo declara desechables.
+Las fundaciones están completas, verificadas y desplegadas. Lo que falta no es
+estructura: es que el sitio se vea como una decisión.
 
-1. Tokens: escala tipográfica, espaciado, color, y la firma visual de SPEC §13.
-2. Reemplazar los estilos globales de `Base.astro`, incluida la cabecera que hoy se
-   rompe en móvil.
-3. Componentes que el contenido ya pide y no existen: tarjeta de proyecto, entrada del
+**Un hallazgo que conviene tener presente antes de empezar.** Los estilos provisionales
+de la fase 1a aterrizaron justo en uno de los tres defaults que SPEC §13 descarta por
+nombre: fondo casi negro (`--bg: #0f1219`) con un único acento verde (`--accent:
+#45c4b0`) — el default (b) de la lista de "diseño generado por IA". No es que el diseño
+esté a medias; es que no hay diseño, y lo provisional cayó en el cliché que la spec
+prohíbe. Eso explica por qué el sitio hoy no convence, y es la razón de que §13 exija un
+plan antes del CSS.
+
+**El orden que pide SPEC §13, y no se salta:** primero un plan compacto —paleta de 4-6
+valores con nombre, tipografías por rol, wireframes en ASCII y cuál es el elemento
+firma—, revisado contra el brief, diciendo explícitamente qué se cambió por genérico.
+**Solo después se escribe CSS.**
+
+1. Revisar §13 antes que nada. Es la parte más subjetiva de toda la spec y la más barata
+   de ajustar ahora; después de construir el sistema encima, ya no.
+2. El plan de diseño, para aprobarlo o romperlo.
+3. Tokens y reemplazo de los estilos globales de `Base.astro`, incluida la cabecera que
+   hoy se rompe en móvil.
+4. Componentes que el contenido ya pide y no existen: tarjeta de proyecto, entrada del
    índice del blog, chips de stack, aviso de pieza sin traducir.
-4. El piso de calidad de SPEC §13 es no negociable: contraste, foco visible, y que
-   `verify` siga en verde.
+5. El piso de calidad de §13 no se negocia: contraste, foco visible,
+   `prefers-reduced-motion`, responsive hasta móvil, y `npm run verify` en verde.
 
 **Terminado cuando:** el sitio se ve como una decisión de diseño y no como HTML sin
-estilo, en móvil y en escritorio, sin una sola fuente del CDN de Google.
+estilo, en móvil y en escritorio, sin una sola fuente del CDN de Google — y sin haber
+caído en ninguno de los tres defaults de §13.
+
+**No es de esta fase** la firma visual completa: el sistema de diagramas con lenguaje de
+esquemático de circuitos es la fase 5. La fase 2 solo deja el terreno listo para eso.
 
 ---
 

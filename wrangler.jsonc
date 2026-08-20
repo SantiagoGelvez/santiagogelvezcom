@@ -3,6 +3,7 @@
   "name": "santiagogelvezcom",
   "compatibility_date": "2026-08-19",
   "workers_dev": false,
+  "preview_urls": true,
 
   // Worker de solo assets: no hay `main`, así que no hay código de servidor que
   // mantener. El sitio es estático sin excepciones (ADR-0005, actualización).

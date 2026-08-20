@@ -60,6 +60,8 @@ Tres audiencias, cada una entra por una puerta distinta. No compiten, pero el ho
 
 El home le habla al reclutador LATAM. No intentes que le hable a las tres a la vez: de ahí salen los "apasionado por la tecnología y los datos" que no dicen nada.
 
+**Una de esas preguntas queda sin responder a propósito.** El sitio no declara disponibilidad: ver ADR-0020. Es la única concesión deliberada al escaneo de diez segundos, y está registrada como tal en lugar de resolverse en silencio.
+
 ---
 
 ## 4. Stack y hosting
@@ -75,7 +77,7 @@ El home le habla al reclutador LATAM. No intentes que le hable a las tres a la v
 
 **Descartados y por qué** (regístralo en `DECISIONS.md`):
 
-- **AWS S3.** No era una alternativa hipotética: **era el hosting hasta el 2026-08-19**, y salir de él es lo que deja limpia la cuenta AWS. (Resultó no haber CloudFront de por medio: Cloudflare proxeaba directo al endpoint de website de S3, así que no hubo distribución que desmontar. El bucket sigue en pie unos días como rollback.) Mi free tier terminó y quiero conservar esa cuenta para proyectos de datos, que es donde el gasto compra aprendizaje relevante. Además no da build automático sin montar CI aparte.
+- **AWS S3.** No era una alternativa hipotética: **era el hosting hasta el 2026-08-19**, y salir de él es lo que deja limpia la cuenta AWS. (Resultó no haber CloudFront de por medio: Cloudflare proxeaba directo al endpoint de website de S3, así que no hubo distribución que desmontar. **El bucket se desmontó el 2026-08-19**, una vez el corte se asentó: ya no queda rollback ni nada facturando.) Mi free tier terminó y quiero conservar esa cuenta para proyectos de datos, que es donde el gasto compra aprendizaje relevante. Además no da build automático sin montar CI aparte.
 - **Vercel.** El plan Hobby está restringido a uso personal no comercial. Si algún día uso el sitio para captar clientes de consultoría, entro en zona gris.
 - **Base de datos (Supabase u otra).** No hay nada que guardar en runtime. Además el tier gratuito de Supabase pausa proyectos por inactividad, que es exactamente el peor comportamiento para un sitio personal de tráfico irregular.
 
@@ -442,13 +444,13 @@ No los construyas. No dejes andamiaje para ellos salvo donde se indique.
 
 El sitio está listo para publicar cuando:
 
-1. ◐ *Estructura cumplida en la fase 1a:* las diez rutas de §5 existen en español e inglés, responden 200 en producción y `npm run verify` lo comprueba en cada build. Falta el contenido real, no las rutas.
+1. ◐ *Estructura cumplida en las fases 1a y 1b:* las diez secciones de §5 existen en español e inglés —27 rutas con la taxonomía real—, responden 200 en producción y `npm run verify` las deriva del contenido en cada build. El contenido y la data se validan con esquemas: un error de tipeo rompe el build. Falta el contenido real, no el mecanismo.
 2. ◐ *Mecanismo cumplido en la fase 1a:* el selector resuelve por clave de traducción y el caso sin traducción está construido y verificado contra una pieza de relleno. Queda ejercitarlo con contenido real.
 3. Los dos casos de estudio están publicados **en ambos idiomas** y los dos posts en español, con el cruce entre ellos.
 4. `/es/cv/` y `/en/cv/` renderizan desde la data. Los **dos PDFs públicos** se generan en build y pasan la prueba automatizada de extracción de texto; los dos completos se generan en local con el mismo pipeline.
 5. La prueba de extracción confirma que **el teléfono no aparece en ninguna variante pública**, y los PDFs completos no están en el directorio desplegado ni en el repositorio.
 6. La hoja de estilos de impresión existe: Ctrl+P sobre `/es/cv/` produce una página legible.
-7. Sitemap, robots, canonical, `hreflang` y JSON-LD verificados. Las categorías con menos de 3 posts salen con `noindex`.
+7. ◐ *Mecanismo cumplido en la fase 1b:* sitemap, robots, canonical, `hreflang` y JSON-LD verificados, y las categorías con menos de 3 posts salen con `noindex` —evaluado por idioma contra el conteo real y comprobado en producción—. Se vuelve a verificar cuando haya contenido real y los conteos cambien.
 8. El formulario de contacto entrega correo y no almacena nada —verificado en la documentación del proveedor—; la página de privacidad existe, está enlazada y nombra al proveedor y a la analítica.
 9. La analítica sin cookies está instalada.
 10. ✅ *Cumplido en la fase 0:* la visualización anterior está eliminada del bucket (no solo del repo), verificada con 404 en vivo, y Search Console está limpio.
@@ -464,4 +466,4 @@ El sitio está listo para publicar cuando:
 
 Cada sesión empieza leyendo **`NEXT.md`**.
 
-Queda una pregunta abierta de la fase 0, que hay que responder antes de la fase 6: **qué dice el sitio sobre disponibilidad**, si es que dice algo. §3 la lista como una de las preguntas que trae el lector. Es una decisión deliberada, no de redacción, y se toma fuera de este documento.
+La pregunta abierta que quedaba de la fase 0 —**qué dice el sitio sobre disponibilidad**— ya está respondida: no dice nada, y se negocia por vacante en la entrevista. Ver ADR-0020, que registra qué se sacrifica al hacerlo (§3 pide que el home responda esa pregunta en diez segundos, y deliberadamente deja de hacerlo).
