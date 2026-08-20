@@ -9,9 +9,8 @@ Estado del repositorio y siguiente paso. Se actualiza al final de cada sesión.
 **Fecha:** 2026-08-19
 **Última sesión:** Fase 2 completa — sistema de diseño, dos modos de maquetación, marco
 centrado y ruta de navegación
-**Estado del repo:** limpio y empujado a `origin/main`, que es lo que dispara el
-despliegue. `npm run verify` pasa en limpio (27 rutas) y `astro check` sale con 0
-errores, 0 avisos y 0 hints.
+**Estado del repo:** limpio, empujado y **desplegado**. `npm run verify` pasa en limpio
+(27 rutas) y `astro check` sale con 0 errores, 0 avisos y 0 hints.
 `git@github.com:SantiagoGelvez/santiagogelvezcom.git` · rama `main` · público.
 **Fase del proyecto:** 0, 1 y 2 completas. Siguiente: fase 3 (data, CV y pipeline del PDF).
 **Infraestructura:** cerrada. Solo Cloudflare, $0/mes. La tubería de despliegue desde
@@ -160,10 +159,22 @@ Peso por página: 108 KB de fuentes y 8 KB de CSS. `dist/` completo pesa 580 KB.
 
 ## Pendientes para mí (Santiago)
 
-1. **Comprobar el despliegue en producción.** El push de esta sesión dispara la tubería.
-   Cuando termine: las 27 rutas en 200, `/` en 301 hacia `/es/`, el 404 propio, y
-   `dig +short MX santiagogelvez.com` respondiendo `1 smtp.google.com`. Es la misma
-   comprobación que cerró la fase 1b.
+**Ninguno.** La fase 2 está en producción y comprobada; lo que sigue es empezar la fase 3.
+
+### Desplegado y comprobado en producción
+
+La tubería desde GitHub construyó y publicó sola en unos **75 segundos** desde el push —
+primera vez que se ejercita de punta a punta con un cambio de verdad. Comprobado en vivo:
+
+```
+las 27 rutas del apex             → 200
+/                                 → 301 hacia /es/
+www.santiagogelvez.com            → 301 hacia el apex
+/no-existe/                       → 404 con la página propia
+/fonts/*.woff2                    → 200 font/woff2, cacheable
+terceros en el HTML               → ninguno (solo enlaces salientes)
+dig +short MX santiagogelvez.com  → 1 smtp.google.com  (correo intacto)
+```
 
 ---
 
