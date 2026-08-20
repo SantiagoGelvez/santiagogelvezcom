@@ -1,6 +1,7 @@
 ---
 import { render } from 'astro:content';
 import Base from '~/layouts/Base.astro';
+import Figure from '~/components/Figure.astro';
 import Band from '~/components/Band.astro';
 import Breadcrumbs from '~/components/Breadcrumbs.astro';
 import TranslationNotice from '~/components/TranslationNotice.astro';
@@ -29,6 +30,19 @@ const alternates = await postAlternates(post.key);
 // para que quien no lee este idioma lo decida en dos segundos (SPEC §8).
 const other = otherLocale(locale);
 const onlyInThisLanguage = alternates[other] === undefined;
+
+/**
+ * `img: Figure` es lo que hace que la sintaxis normal de markdown produzca una
+ * figura con visor, sin que quien escribe importe nada:
+ *
+ *   ![Lo que describe la imagen](~/assets/posts/mi-post/flujo.png "La leyenda")
+ *
+ * MDX resuelve la ruta y entrega la imagen ya optimizada, el `alt` y el `title`.
+ * El mapa va aquí y no en el MDX porque es una decisión del sitio, no de la
+ * pieza: una imagen en un post **siempre** es una figura (ADR-0031).
+ */
+const mdxComponents = { img: Figure };
+
 ---
 
 <Base
@@ -69,7 +83,7 @@ const onlyInThisLanguage = alternates[other] === undefined;
     <p class="lead">{data.resumen}</p>
 
     <div class="prose">
-      <Content />
+      <Content components={mdxComponents} />
     </div>
   </Band>
 </Base>

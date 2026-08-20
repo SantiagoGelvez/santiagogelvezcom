@@ -7,6 +7,98 @@ Orden cronológico inverso — lo más reciente arriba.
 
 ---
 
+## ADR-0031 — Las imágenes se abren en el *top layer*, no se sangran
+
+**Fecha:** 2026-08-20
+
+**Decisión.** El contenido admite imágenes desde ya, con estas reglas:
+
+- La fuente vive en `src/assets/` y se optimiza en build con `astro:assets`. `public/`
+  queda para lo que se sirve tal cual. `image.layout` global en `constrained`,
+  `responsiveStyles: false` porque el CSS de este repo se escribe a mano.
+- **Se escribe con la sintaxis normal de markdown**, sin importar nada:
+  `![alt](~/assets/posts/mi-post/flujo.png "leyenda")`. Las cuatro páginas que renderizan
+  MDX pasan `components={{ img: Figure }}`, y MDX entrega la imagen ya resuelta, el `alt`
+  y el `title`. El alias `~/` funciona, así que la ruta no depende de dónde esté el `.mdx`.
+- `src/components/Figure.astro` emite **dos renditions** de la misma fuente: una en la
+  columna (tope 1200 px) y una completa (tope 2400 px).
+- **La imagen se abre a pantalla completa con `popover` nativo**, no se sangra. La caja del
+  popover es la imagen y nada más; lo que oscurece la pantalla es el `::backdrop`.
+- La leyenda lleva un enlace a la imagen completa, **en pestaña nueva**.
+- **El idioma sale de `Astro.currentLocale`**, no de una prop.
+- `npm run verify` impone tres presupuestos —400 kB por fuente, 500 kB por imagen servida,
+  2.5 MB en total—, rechaza cualquier fuente con EXIF o XMP incrustado, y falla si el HTML
+  construido tiene `id` repetidos.
+
+**Las imágenes se versionan; el video no.** Son dos problemas con la misma forma y distinto
+tamaño. Una captura bien recortada pesa decenas de kB y **tiene que estar en el repositorio
+para que el build la optimice**: fuera de él no hay `srcset`, ni AVIF, ni `width`/`height`
+—que es CLS y SPEC §10 lo prohíbe por nombre—, y transformarlas en el borde cuesta dinero.
+Además una imagen y el post que la referencia son la misma pieza: si viajan separadas, se
+pueden desincronizar. Un video son dos órdenes de magnitud más y ninguna de esas ventajas
+aplica, así que ahí sí compensa R2 con dominio propio — decisión de la fase 5, con su ADR.
+
+**Alternativas consideradas.** Sangrar la figura más allá de `--measure`, que es la
+excepción que ADR-0021 dejó reservada para la fase 5. Un visor con `:target`, que tiene
+soporte universal. Un enlace a la imagen y nada más. Embeber una librería de *lightbox*.
+Para la escritura: instanciar `<Figure>` a mano en cada MDX, con dos `import` por pieza.
+Para el alojamiento: servir las imágenes desde R2, como el video.
+
+**Por qué.** SPEC §9.7 pide capturas del dashboard en los casos de estudio y la columna de
+lectura mide 68ch ≈ 544 px, donde un dashboard no se lee. El *top layer* no está sujeto a
+`--measure` ni a `--frame`, así que **el visor resuelve el problema de ancho sin tocar la
+maquetación** — y eso es mejor que sangrar, porque el sangrado obliga a decidir una segunda
+geometría para el contenido y el visor no obliga a nada.
+
+Entre los tres mecanismos sin JavaScript, `popover` es el único que da `Esc`, cierre al
+hacer clic fuera, gestión del foco y `::backdrop` **del navegador**. Con `:target` esas
+cuatro cosas hay que simularlas, y tres de ellas son exigencias del piso de calidad de SPEC
+§13: simuladas a medias es peor que ausentes, porque parecen estar. Una librería queda
+descartada de entrada — el sitio no tiene una línea de JavaScript y ese es el punto.
+
+Los presupuestos van en `verify` y no en una nota porque el repositorio es público
+(ADR-0009): una imagen de tres megas no se saca del historial borrándola en el commit
+siguiente. La comprobación de EXIF protege lo mismo por otro lado — sharp elimina los
+metadatos al reprocesar, así que **lo desplegado siempre sale limpio** y el único sitio
+donde el GPS de una foto puede quedarse para siempre es el archivo versionado.
+
+La sintaxis de markdown gana sobre instanciar el componente porque **el coste de escribir
+es el que decide si el sitio se llena**. Dos `import` por pieza más una etiqueta de cinco
+líneas es fricción que se paga en cada post, para siempre, y a cambio de nada: el HTML que
+sale es idéntico. Mapear `img` una vez en cuatro páginas lo cobra una sola vez.
+
+**Qué se sacrificó.** `popover` pide **Safari 17** (septiembre de 2023) y en un navegador
+anterior el botón no hace nada. Lo compensa el enlace de la leyenda, y el precio de esa
+compensación es que **hay dos afordances para lo mismo**: la imagen se pulsa y el enlace se
+sigue. Es fealdad real, y se acepta porque el enlace además es lo único de los dos que
+sobrevive a la impresión y lo que en móvil permite pellizcar para acercar.
+
+El sangrado no desaparece: sigue haciendo falta para un diagrama, que se lee **dentro** del
+flujo del texto y no en un visor. Lo que cambia es que deja de bloquear el contenido, así
+que la excepción de ADR-0021 se diseña en la fase 5 sin prisa.
+
+Mapear `img` es global: **toda** imagen de markdown pasa a ser una figura con visor. No hay
+forma de pedir una imagen pequeña en línea sin visor sin escribir HTML crudo en el MDX. Se
+acepta porque en este sitio una imagen dentro de una pieza siempre es una figura; el día que
+deje de ser cierto, hace falta una convención y no un parche.
+
+Y la leyenda viaja en el `title` de markdown, que es el hueco del *tooltip*. Es el único
+campo extra que da la sintaxis, así que se le cambia el significado — quien lea el `.mdx`
+sin conocer esta decisión puede leerlo como un texto flotante que nunca aparece.
+
+Y el `id` del popover sale de un hash de la ruta de la fuente, así que la misma imagen dos
+veces en una página produce dos `id` iguales. Hay una prop `id` para resolverlo, pero es
+acoplamiento: el marcado depende de que quien escribe se acuerde. La red es la comprobación
+de `id` duplicados en `verify` —probada a propósito—, que convierte el descuido en un build
+roto en vez de en un botón que abre la figura equivocada.
+
+**Nota medida, no supuesta.** Astro copia además la fuente **sin optimizar** a `dist/`,
+porque importar una imagen en un MDX es un import de módulo y Vite emite el archivo. Ningún
+HTML la enlaza. No se puede evitar sin salirse del pipeline de assets, así que `verify` lo
+reporta como aviso y lo cuenta en el presupuesto: se despliega, aunque nadie la pida.
+
+---
+
 ## ADR-0030 — Los PDF se generan en cada build; el despliegue se muda a GitHub Actions
 
 **Fecha:** 2026-08-20

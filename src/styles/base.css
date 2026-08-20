@@ -683,4 +683,18 @@ h3 {
   a {
     text-decoration-color: currentColor;
   }
+
+  /*
+   * Media impresa. Aplica a las 27 rutas, no solo al CV: cualquier post se
+   * puede imprimir y una figura partida entre dos páginas no se entiende.
+   */
+  figure {
+    break-inside: avoid;
+  }
+
+  /* El visor no existe en papel: no hay dónde pulsar. Lo que sí queda es el
+     enlace de la leyenda, que es la mitad del par que sobrevive (ADR-0031). */
+  [popover] {
+    display: none;
+  }
 }

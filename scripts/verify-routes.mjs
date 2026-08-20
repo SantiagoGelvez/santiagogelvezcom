@@ -178,6 +178,17 @@ for (const [value, html] of pages) {
   const h1s = html.match(/<h1[\s>]/g) ?? [];
   if (h1s.length !== 1) fail(value, `se esperaba 1 <h1>, hay ${h1s.length}`);
 
+  // El visor de una figura empareja `popovertarget` con el `id` del popover
+  // (ADR-0031). El `id` sale de un hash de la ruta de la imagen, así que la
+  // **misma** imagen dos veces en una página produce dos `id` iguales y el botón
+  // de la segunda abriría la primera. `Figure.astro` acepta una prop `id` para
+  // resolverlo; esto es lo que hace que acordarse no sea necesario.
+  const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
+  const duplicated = [...new Set(ids.filter((id, index) => ids.indexOf(id) !== index))];
+  if (duplicated.length > 0) {
+    fail(value, `id duplicado(s) en el HTML: ${duplicated.join(', ')}`);
+  }
+
   if (!html.includes('rel="canonical"')) fail(value, 'sin canonical');
 
   const titleMatch = html.match(/<title>([^<]*)<\/title>/);
@@ -318,6 +329,135 @@ if (dirty !== '') {
   );
 }
 
+/* ------------------------------------------------------------------- media
+ *
+ * Dos presupuestos que protegen cosas distintas, y por eso son dos.
+ *
+ * **El de la fuente protege la historia de git**, que es la mitad irreversible:
+ * el repositorio es público (ADR-0009) y un PNG de tres megas queda ahí para
+ * siempre aunque se borre en el commit siguiente. **El de la salida protege al
+ * visitante**, que es la mitad que se puede arreglar recomprimiendo.
+ *
+ * No se separan las renditions en línea de las del visor. Se podría —la del
+ * visor es la que cuelga del `[popover]`— pero exigiría emparejar URLs contra el
+ * HTML de cada página, y un presupuesto frágil que hay que arreglar cada vez que
+ * cambia el marcado se acaba desactivando. Un tope por archivo y un tope al
+ * total cubren el modo de fallo real: una imagen sin comprimir que nadie miró.
+ */
+
+const IMAGE_EXTENSIONS = new Set(['.avif', '.webp', '.png', '.jpg', '.jpeg', '.gif', '.svg']);
+const MAX_SOURCE_BYTES = 400_000;
+const MAX_EMITTED_BYTES = 500_000;
+const MAX_EMITTED_TOTAL_BYTES = 2_500_000;
+
+const assets = fileURLToPath(new URL('src/assets/', root));
+
+async function walkImages(dir, prefix) {
+  const found = [];
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    // Todavía no hay imágenes en el proyecto. No es un fallo: es el estado
+    // inicial, y un criterio de terminado que exige contenido no es un criterio.
+    return found;
+  }
+  for (const entry of entries) {
+    const full = path.join(dir, entry.name);
+    const shown = `${prefix}${entry.name}`;
+    if (entry.isDirectory()) found.push(...(await walkImages(full, `${shown}/`)));
+    else if (IMAGE_EXTENSIONS.has(path.extname(entry.name).toLowerCase())) found.push({ full, shown });
+  }
+  return found;
+}
+
+/**
+ * Metadatos incrustados en el archivo fuente. Sharp los elimina al reprocesar,
+ * así que **lo que se despliega sale limpio pase lo que pase**; lo que hay que
+ * vigilar es lo que entra al repositorio, porque ahí no hay segunda pasada.
+ *
+ * Una foto de teléfono lleva GPS, modelo y a veces el nombre del propietario en
+ * el EXIF, y una captura editada arrastra el XMP del editor con la ruta local
+ * —que suele incluir el nombre de usuario—. Nada de eso se ve abriendo la
+ * imagen, y todo eso es exactamente lo que SPEC §11 prohíbe publicar.
+ */
+const METADATA_MARKERS = [
+  { needle: Buffer.from('Exif\0\0', 'binary'), label: 'EXIF' },
+  { needle: Buffer.from('eXIf', 'binary'), label: 'EXIF (chunk PNG)' },
+  { needle: Buffer.from('http://ns.adobe.com/xap/1.0/', 'binary'), label: 'XMP' },
+];
+
+const sourceImages = await walkImages(assets, 'src/assets/');
+for (const image of sourceImages) {
+  const bytes = await readFile(image.full);
+  if (bytes.byteLength > MAX_SOURCE_BYTES) {
+    failures.push(
+      `${image.shown}: pesa ${Math.round(bytes.byteLength / 1000)} kB y el tope de una fuente es ` +
+        `${MAX_SOURCE_BYTES / 1000} kB. El repositorio es público: lo que entra no se puede sacar.`,
+    );
+  }
+  for (const marker of METADATA_MARKERS) {
+    if (bytes.includes(marker.needle)) {
+      failures.push(
+        `${image.shown}: lleva ${marker.label} incrustado. Puede contener GPS, dispositivo o nombre de ` +
+          'usuario, y en un repositorio público eso no se corrige borrando (SPEC §11).',
+      );
+    }
+  }
+}
+
+const emittedImages = await walkImages(dist, '/');
+let emittedTotal = 0;
+for (const image of emittedImages) {
+  const info = await stat(image.full);
+  image.size = info.size;
+  emittedTotal += info.size;
+  if (info.size > MAX_EMITTED_BYTES) {
+    failures.push(
+      `${image.shown}: pesa ${Math.round(info.size / 1000)} kB y el tope de una imagen servida es ` +
+        `${MAX_EMITTED_BYTES / 1000} kB.`,
+    );
+  }
+}
+/**
+ * Astro emite **también la fuente sin optimizar**: importar una imagen en un MDX
+ * es un import de módulo, y Vite copia el archivo a `dist/_astro/` para que
+ * `ImageMetadata.src` resuelva. Ninguna página la enlaza —todas usan las
+ * renditions— así que es peso desplegado que nadie descarga.
+ *
+ * Es un **aviso y no un fallo**: no se puede evitar sin salirse del pipeline de
+ * assets de Astro, y romper el build por algo que no se puede arreglar convierte
+ * el criterio de terminado en ruido. Lo que sí hace falta es que el número se
+ * vea, porque escala con cada imagen que entre y no aparece en ningún sitio más.
+ */
+const referenced = new Set();
+for (const [, html] of pages) {
+  for (const match of html.matchAll(/(?:src|href)="(\/_astro\/[^"]+)"/g)) referenced.add(match[1]);
+  for (const match of html.matchAll(/srcset="([^"]*)"/g)) {
+    for (const candidate of match[1].split(',')) {
+      const url = candidate.trim().split(/\s+/)[0];
+      if (url.startsWith('/_astro/')) referenced.add(url);
+    }
+  }
+}
+
+const orphans = emittedImages.filter((image) => !referenced.has(image.shown));
+if (orphans.length > 0) {
+  const bytes = orphans.reduce((total, image) => total + image.size, 0);
+  console.warn(
+    `⚠ ${orphans.length} imagen(es) en dist/ que ningún HTML enlaza, ${Math.round(bytes / 1000)} kB en total.\n` +
+      '  Son las fuentes sin optimizar que Vite copia al importarlas. Cuentan para el presupuesto\n' +
+      '  porque se despliegan, aunque ningún visitante las pida.',
+  );
+}
+
+if (emittedTotal > MAX_EMITTED_TOTAL_BYTES) {
+  failures.push(
+    `dist/: las imágenes suman ${Math.round(emittedTotal / 1000)} kB y el tope es ` +
+      `${MAX_EMITTED_TOTAL_BYTES / 1000} kB. Es la deriva la que se vigila aquí, no una imagen concreta.`,
+  );
+}
+
 /* ----------------------------------------------------- archivos de soporte */
 
 for (const file of extraFiles) {
@@ -337,5 +477,6 @@ if (failures.length > 0) {
 console.log(
   `✓ ${expected.size} rutas derivadas del contenido y verificadas ` +
     `(${published.length} posts, ${siteProjects.length} proyectos, ${drafts.length} borrador(es) excluido(s)), ` +
-    `más ${extraFiles.length} archivos de soporte y ${cvLinks.length} PDF del CV`,
+    `más ${extraFiles.length} archivos de soporte, ${cvLinks.length} PDF del CV ` +
+    `y ${sourceImages.length} imagen(es) fuente → ${emittedImages.length} servidas (${Math.round(emittedTotal / 1000)} kB)`,
 );

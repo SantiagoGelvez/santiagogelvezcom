@@ -315,6 +315,24 @@ Dos niveles: tarjeta en el índice (título, una línea, stack, estado) y págin
 
 **Las secciones 5 y 6 son las que hacen que el caso de estudio funcione.** Si hay que recortar, se recorta todo lo demás antes que esas dos. La plantilla debe hacerlas difíciles de omitir.
 
+### Imágenes en el contenido
+
+**Estado: implementado (ADR-0031).** La fuente vive en `src/assets/<tipo>/<pieza>/`, se versiona y se optimiza en build. `public/` queda para lo que se sirve tal cual.
+
+**Se escribe con la sintaxis normal de markdown, sin importar nada:**
+
+```md
+![Lo que la imagen muestra, para quien no la ve](~/assets/posts/mi-post/flujo.png "La leyenda visible")
+```
+
+El texto entre corchetes es el `alt`, el entrecomillado es la leyenda, y el idioma sale de la URL. El alias `~/` funciona, así que la ruta no cambia según dónde esté el archivo. Eso es todo lo que hay que saber para poner una imagen.
+
+Una figura vive **a la medida de lectura** y se abre a pantalla completa al pulsarla, con un `popover` nativo y sin una línea de JavaScript. Ese visor es la respuesta al punto 7 de arriba: una captura de dashboard es ilegible a 544 px, y el *top layer* no está sujeto a ningún ancho de la página. **Por eso las capturas no necesitan que la maquetación se sangre** — el sangrado sigue pendiente de la fase 5, pero solo para los diagramas, que se leen dentro del flujo del texto.
+
+Tres reglas que `npm run verify` hace cumplir y que no dependen de acordarse: el presupuesto de peso (400 kB por fuente, 500 kB por imagen servida, 2.5 MB en total), que ninguna fuente lleve EXIF ni XMP incrustado, y que el HTML construido no tenga `id` repetidos. La cuarta —qué puede verse **dentro** de una captura— no se puede automatizar y vive en las reglas permanentes de `CLAUDE.md`.
+
+**Las imágenes se versionan; el video no.** Una captura recortada pesa decenas de kB y tiene que estar en el repositorio para que el build la optimice: fuera de él no hay `srcset`, ni formato moderno, ni dimensiones declaradas — que es CLS, y §10 lo prohíbe por nombre. Un video son dos órdenes de magnitud más y no gana nada con el pipeline, así que ahí sí compensa alojarlo fuera (R2 con dominio propio). Vídeo: fuera de esta fase. Un clip corto y mudo llega en la fase 5 con el sistema de diagramas; la demo larga necesita su propio ADR.
+
 ---
 
 ## 10. SEO y metadatos
@@ -450,6 +468,8 @@ Antes de escribir CSS, entrégame un plan compacto: paleta de 4-6 valores con no
 
 **Estado: ejecutado en la fase 2.** El plan se entregó, se aprobó y quedó registrado en **ADR-0021** —paleta de seis tokens, tres familias por rol y la barra colectora como elemento firma— con **ADR-0022** para el alojamiento de las tipografías. Lo de arriba queda como el proceso que se siguió, no como trabajo pendiente. Si el sistema se cambia, se cambia con un ADR nuevo que reemplace al 0021; esta sección ya no decide nada.
 
+> **Sobre el ancho de las imágenes.** ADR-0021 dejó anotado que una imagen sangrada o un diagrama más ancho que la medida necesitarían una excepción explícita en la fase 5. ADR-0031 le quitó la urgencia a la mitad del problema: las capturas se miran en el visor, que no está sujeto a la medida. Lo que queda para la fase 5 es el ancho de un **diagrama**, que sí se lee dentro del flujo del texto y no en un visor.
+
 ### Piso de calidad (no negociable)
 
 Responsive hasta móvil. Foco de teclado visible. `prefers-reduced-motion` respetado. Contraste accesible. Esto no se anuncia, se cumple.
@@ -461,7 +481,7 @@ Responsive hasta móvil. Foco de teclado visible. `prefers-reduced-motion` respe
 No los construyas. No dejes andamiaje para ellos salvo donde se indique.
 
 - Calendly o agendamiento. (Se agregará si activo consultoría freelance; que la estructura lo permita sin rediseño.)
-- Sección de video / YouTube. (Igual: que la navegación no quede rígida a cinco items.)
+- Sección de video / YouTube. (Igual: que la navegación no quede rígida a cinco items.) **Esto es una *sección* del sitio, no un clip dentro de un caso de estudio**: lo segundo llega en la fase 5. Lo que sí está descartado en cualquier caso es el `<iframe>` de YouTube — transmite la IP de cada visitante a Google, que es el mismo motivo por el que §10 rechaza el CDN de fuentes.
 - Comentarios.
 - Newsletter y suscripción por correo.
 - Buscador en el blog.

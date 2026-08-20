@@ -1,0 +1,145 @@
+---
+import { Image, getImage } from 'astro:assets';
+import { locales, type Locale } from '~/i18n/routes';
+import { figure as t } from '~/i18n/ui';
+
+/**
+ * Una figura del contenido, con visor a tamaño completo.
+ *
+ * **Casi nunca se escribe a mano.** Las cuatro páginas que renderizan MDX lo
+ * pasan como `components={{ img: Figure }}`, así que la sintaxis normal de
+ * markdown ya lo usa:
+ *
+ * ```md
+ * ![Lo que describe la imagen](~/assets/posts/mi-post/flujo.png "La leyenda")
+ * ```
+ *
+ * El `alt` es el texto entre corchetes, la leyenda es el `title` entre comillas
+ * —el único hueco extra que da markdown— y el idioma sale de la URL. Sin
+ * imports, sin props, sin acordarse de nada. Se instancia a mano solo cuando
+ * hace falta la prop `id`.
+ *
+ * **El visor no es adorno: es lo que hace utilizable una captura.** La columna
+ * de lectura mide `--measure` (68ch ≈ 544 px) y a ese ancho un dashboard no se
+ * lee. En vez de sangrar la figura —la excepción que ADR-0021 dejó reservada
+ * para la fase 5— la imagen se abre en el *top layer*, que no está sujeto a
+ * ningún ancho de la página.
+ *
+ * Se construye con `popover` nativo, así que **el sitio sigue sin una línea de
+ * JavaScript**: el navegador aporta `Esc`, el cierre al hacer clic fuera, el
+ * `::backdrop` y el foco. Con `popover="manual"` habría que reimplementar los
+ * dos primeros, y sin JS eso no se puede.
+ *
+ * El precio está en ADR-0031: `popover` pide Safari 17 (septiembre de 2023) y
+ * en un navegador anterior el botón no hace nada. Por eso la leyenda lleva un
+ * enlace normal a la imagen — universal, y además es lo único de los dos que
+ * sobrevive a la impresión.
+ */
+interface Props {
+  /** El `import` de la imagen. Desde markdown lo resuelve MDX por su cuenta. */
+  src: ImageMetadata;
+  /**
+   * Obligatorio. `<Image>` ya rompe el build si falta, así que la regla de
+   * accesibilidad se cumple por construcción y no por disciplina.
+   */
+  alt: string;
+  /** Leyenda visible. Desde markdown llega como `title`. */
+  caption?: string;
+  title?: string;
+  /**
+   * Casi nunca se pasa: por defecto sale de la URL, que es la fuente correcta.
+   * Existe para renderizar una figura fuera de una ruta con prefijo de idioma.
+   */
+  locale?: Locale;
+  /** Solo hace falta si la misma imagen aparece dos veces en la misma página. */
+  id?: string;
+}
+
+const { src, alt, caption, title, locale, id } = Astro.props;
+
+/**
+ * El idioma sale de la URL y no de un valor por defecto. La diferencia importa:
+ * un default de `'es'` haría que el visor saliera en español dentro de un post
+ * en inglés, en silencio. `Astro.currentLocale` no puede equivocarse porque la
+ * ruta **es** el idioma; y si no hay ninguno —una página fuera de `/es/` o
+ * `/en/`— el build se cae con un mensaje en vez de inventarse uno.
+ */
+const resolved = locale ?? Astro.currentLocale;
+if (!locales.includes(resolved as Locale)) {
+  throw new Error(
+    `<Figure> en ${Astro.url.pathname} no puede resolver el idioma: la ruta no tiene prefijo ` +
+      '`/es/` ni `/en/`. Pásale `locale` a mano si la figura vive fuera de una ruta con idioma.',
+  );
+}
+const lang = resolved as Locale;
+
+/**
+ * Dos renditions de la misma fuente, que es el punto entero del componente:
+ * la de la columna se dimensiona para leerse, la del visor para mirarse.
+ */
+const INLINE_WIDTH = 1200;
+const FULL_WIDTH = 2400;
+
+/*
+ * `layout: 'none'` es obligatorio aquí, no cosmético. `image.layout` está en
+ * `'constrained'` globalmente, así que sin este override `getImage` genera su
+ * propio srcset de siete anchos para una imagen que se usa en un solo tamaño:
+ * seis archivos por figura que se despliegan y que nadie descarga. Lo detectó el
+ * aviso de huérfanas de `verify-routes.mjs`, no la revisión a ojo.
+ */
+const full = await getImage({ src, width: Math.min(src.width, FULL_WIDTH), layout: 'none' });
+
+/**
+ * El `id` del popover sale de un hash de la ruta de la fuente, no de un
+ * contador de módulo: un contador depende del orden de renderizado y en dev no
+ * coincide con el del build. La ruta emitida tampoco sirve —lleva query en dev
+ * y hash de contenido en build—, así que se hashea la fuente.
+ *
+ * La misma imagen dos veces en una página colisiona. Se resuelve con la prop
+ * `id`, y que haga falta no depende de acordarse: `verify-routes.mjs` falla si
+ * el HTML construido tiene `id` repetidos.
+ */
+function hash(value: string): string {
+  let h = 0;
+  for (let i = 0; i < value.length; i += 1) h = Math.imul(h, 31) + value.charCodeAt(i);
+  return (h >>> 0).toString(36);
+}
+
+const uid = id ?? `fig-${hash(src.src)}`;
+const legend = caption ?? title;
+---
+
+<figure class="figure">
+  <button type="button" class="figure-zoom" popovertarget={uid} aria-label={`${t.expand[lang]}: ${alt}`}>
+    <Image src={src} alt={alt} width={Math.min(src.width, INLINE_WIDTH)} layout="constrained" />
+  </button>
+
+  {
+    legend && (
+      <figcaption>
+        {legend}{' '}
+        {/* En pestaña nueva a propósito: es el camino de quien no tiene `popover`
+            —o de quien en móvil quiere pellizcar para acercar— y perder el post
+            para volver con el botón de atrás sería peor que no ofrecerlo. */}
+        <a href={full.src} class="figure-full" target="_blank" rel="noopener">
+          {t.fullSize[lang]}
+        </a>
+      </figcaption>
+    )
+  }
+</figure>
+
+<div id={uid} popover class="viewer">
+  <button
+    type="button"
+    class="viewer-close"
+    popovertarget={uid}
+    popovertargetaction="hide"
+    autofocus
+  >
+    {t.close[lang]}
+  </button>
+  {/* `alt` vacío a propósito: el botón que la abre ya lleva el nombre accesible,
+      y repetirlo haría que el lector de pantalla anuncie la imagen dos veces. */}
+  <img src={full.src} width={full.attributes.width} height={full.attributes.height} alt="" />
+</div>

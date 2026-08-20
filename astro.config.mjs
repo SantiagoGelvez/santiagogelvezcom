@@ -19,6 +19,17 @@ export default defineConfig({
     },
   },
 
+  image: {
+    // `constrained` es lo que genera `srcset` y `sizes`. Sin él, `<Image>` emite
+    // una sola rendition y el móvil se descarga la de escritorio.
+    layout: 'constrained',
+    // Astro inyectaría sus propios estilos globales para el layout responsive.
+    // Aquí el CSS se escribe a mano y ningún componente tiene `<style>` scoped;
+    // `.prose img` ya hacía casi todo lo que hace `constrained`, así que las
+    // cuatro reglas que faltaban viven en `prose.css` como el resto.
+    responsiveStyles: false,
+  },
+
   i18n: {
     locales: ['es', 'en'],
     defaultLocale: 'es',

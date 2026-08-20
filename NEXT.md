@@ -7,10 +7,12 @@ Estado del repositorio y siguiente paso. Se actualiza al final de cada sesión.
 ## Estado actual
 
 **Fecha:** 2026-08-20
-**Última sesión:** Fase 3 — el CV navegable, el pipeline de los cuatro PDF, la prueba ATS,
+**Última sesión:** Imágenes en el contenido y su visor a tamaño completo (ADR-0031). Antes,
+en la misma fecha: fase 3 — el CV navegable, el pipeline de los cuatro PDF, la prueba ATS,
 sacar los datos de contacto del HTML y mudar el despliegue a GitHub Actions
-**Estado del repo:** limpio, empujado y **desplegado**. `npm run verify` pasa (27 rutas,
-4 archivos de soporte, 2 PDF) y `astro check` sale con 0 errores, 0 avisos y 0 hints.
+**Estado del repo:** limpio y desplegable; **lo de las imágenes todavía no se ha empujado**.
+`npm run verify` pasa (27 rutas, 4 archivos de soporte, 2 PDF, 1 imagen fuente → 9 servidas,
+70 kB) y `astro check` sale con 0 errores, 0 avisos y 0 hints.
 `git@github.com:SantiagoGelvez/santiagogelvezcom.git` · rama `main` · público.
 **Fase del proyecto:** 0, 1, 2 completas. Fase 3 **completa en mecanismo**; le falta la
 data real, que es trabajo de Santiago y no de ingeniería (ver pendientes).
@@ -28,9 +30,10 @@ santiagogelvezcom/
 ├── .github/workflows/     El despliegue: construye, genera los PDF y publica (ADR-0030)
 ├── public/fonts/          Las cuatro .woff2 del sistema + la OFL (ADR-0022)
 ├── src/
+│   ├── assets/            Imágenes fuente, optimizadas en build (ADR-0031)
 │   ├── styles/            tokens · base · prose · cv (pantalla + papel en un archivo)
 │   ├── components/        Band, Section, ProjectCard, PostEntry, Chip, Breadcrumbs,
-│   │                      los dos avisos y CvDocument
+│   │                      Figure, los dos avisos y CvDocument
 │   ├── content.config.ts  Esquemas Zod de las 9 colecciones
 │   ├── content/data/      Perfil, experiencia, educación, certificaciones, skills,
 │   │                      variantes del CV — y el `.private.example.yml`
@@ -46,6 +49,82 @@ santiagogelvezcom/
 ---
 
 ## Qué quedó hecho
+
+### Las imágenes entran, y el ancho deja de ser el problema
+
+Salió de una pregunta tuya —¿se pueden poner imágenes y videos?— y la respuesta corta era
+que sí desde el primer día: `sharp` ya venía con Astro y `astro:assets` no necesitaba
+instalar nada. Lo que no estaba resuelto era el **ancho**: la columna de lectura mide
+68ch ≈ 544 px y SPEC §9.7 pide capturas de dashboard, que a 544 px no se leen.
+
+La salida obvia era sangrar la figura — la excepción que ADR-0021 dejó apuntada para la
+fase 5. **Tu idea del visor es mejor que eso** y por eso se hizo así: al pulsar, la imagen
+entra al *top layer*, que no está sujeto a `--measure` ni a `--frame`. El ancho deja de ser
+un problema de maquetación sin tener que decidir una segunda geometría para el contenido.
+
+Va con `popover` nativo, así que **el sitio sigue sin una línea de JavaScript**: `Esc`, el
+cierre al hacer clic fuera, el foco y el fondo opacado los pone el navegador. Comprobado
+con Playwright sobre el sitio construido, no a ojo:
+
+```
+abre con clic · abre con Enter        ✓     foco al abrir → botón Cerrar   ✓
+Esc cierra                            ✓     clic en el fondo cierra        ✓
+centrado a 1440, 1920 y 390           ✓     el visor no existe al imprimir ✓
+"ver a tamaño completo" → pestaña nueva ✓   <script> en el HTML: solo JSON-LD
+el idioma sale de la URL: ES → "Cerrar", EN → "Close", sin ninguna prop      ✓
+```
+
+El foco vuelve al botón que abrió con `Esc` y con «Cerrar»; con clic en el fondo se va al
+`body`. Es el comportamiento del navegador y no se toca: quien cerró con el puntero no está
+navegando con el teclado.
+
+### Poner una imagen es una línea de markdown
+
+Esto salió de una segunda pregunta tuya —*¿tengo que instanciar el componente cada vez?*— y
+la respuesta era que no, pero había que comprobarlo. **El plugin de MDX convierte
+`![alt](x.png)` en un elemento interceptable**, así que las cuatro páginas mapean
+`components={{ img: Figure }}` una sola vez y en el `.mdx` se escribe markdown y nada más:
+
+```md
+![Lo que la imagen muestra, para quien no la ve](~/assets/posts/mi-post/flujo.png "La leyenda visible")
+```
+
+MDX entrega la imagen **ya resuelta como objeto**, el `alt` y el `title`. El alias `~/`
+funciona en esa ruta, así que no depende de a qué profundidad esté el archivo. Y el idioma
+sale de `Astro.currentLocale`, que no puede equivocarse porque la ruta **es** el idioma —
+eso quitó la prop `locale`, que era la que más molestaba.
+
+El HTML que sale es idéntico al de instanciar el componente a mano. Lo que cambia es el
+coste de escribir, y ese es el que decide si el sitio se llena o no.
+
+**Dos errores que encontró la máquina y no la revisión a ojo:**
+
+- El visor ocupaba toda la ventana, así que **no quedaba ningún "fuera" que pulsar** y el
+  gesto más obvio no hacía nada. La caja del popover tiene que ser la imagen y nada más;
+  lo que oscurece la pantalla es el `::backdrop`, que no es parte de la caja.
+- Como `image.layout` es global, mi `getImage()` de la versión completa generaba **su
+  propio srcset de siete anchos** para algo que se usa en un tamaño: seis archivos muertos
+  por figura. Lo delató el aviso de imágenes huérfanas. De 15 archivos servidos a 9.
+
+Y un tercero, más fino: `.prose > :last-child` fijaba el margen inferior del popover en
+cero, y como `margin: auto` es lo que lo centra, el `auto` de arriba absorbía todo el hueco
+y la imagen quedaba pegada al borde inferior, cortada. Las reglas de ritmo vertical de la
+prosa ahora excluyen `[popover]`, que es lo correcto de todos modos: un popover no está en
+el flujo, así que un margen suyo no separa nada.
+
+**Lo que `verify` hace cumplir ahora**, y las tres se probaron rompiéndolas a propósito:
+
+| | |
+|---|---|
+| 400 kB por fuente | el repo es público y lo que entra no se saca |
+| 500 kB por imagen servida · 2.5 MB en total | el ancho de banda, y la deriva |
+| EXIF / XMP en una fuente → falla | GPS, dispositivo y nombre de usuario |
+| `id` duplicados en el HTML → falla | que el visor no abra la figura equivocada |
+
+La cuarta regla —qué puede verse **dentro** de una captura— no la puede auditar ningún
+script y por eso está en las reglas permanentes de `CLAUDE.md`. Es la más importante de las
+cinco: una captura filtra un nombre de cliente o un correo en una esquina de un modo que el
+texto nunca haría, y en un repositorio público eso no se corrige borrando.
 
 ### Las tres salidas de SPEC §7, desde una sola data
 
@@ -271,6 +350,27 @@ no tenerlo, porque da confianza.
 
 ## Defectos conocidos
 
+- **El visor pide Safari 17** (septiembre de 2023). En un navegador anterior el botón sobre
+  la imagen no hace nada. Lo compensa el enlace «ver a tamaño completo» de la leyenda, y el
+  precio de esa compensación es que hay **dos afordances para lo mismo** — fealdad real,
+  aceptada en ADR-0031 porque el enlace además es lo único que sobrevive a la impresión y lo
+  que en móvil permite pellizcar para acercar.
+- **Astro despliega también la fuente sin optimizar.** Importar una imagen en un MDX es un
+  import de módulo y Vite copia el archivo a `dist/`, aunque ningún HTML lo enlace. Hoy son
+  39 kB; escala con cada imagen que entre. No se puede evitar sin salirse del pipeline de
+  assets, así que `verify` lo avisa y lo cuenta en el presupuesto en vez de romper el build
+  por algo que no se puede arreglar.
+- **Mapear `img` es global: toda imagen de markdown es una figura con visor.** No hay forma
+  de pedir una imagen pequeña en línea sin visor salvo escribiendo HTML crudo en el MDX. Se
+  acepta porque hoy una imagen dentro de una pieza siempre es una figura; si deja de serlo,
+  hace falta una convención y no un parche.
+- **La leyenda viaja en el `title` de markdown**, que es el hueco del *tooltip*. Es el único
+  campo extra que da la sintaxis, así que se le cambia el significado: quien abra un `.mdx`
+  sin conocer ADR-0031 puede leerlo como un texto flotante que nunca aparece.
+- **En móvil el visor sirve de poco con una imagen apaisada**: a 390 px una 16:9 se queda en
+  342 × 194. Ahí el enlace de la leyenda es mejor que el visor, porque abre el visor propio
+  del navegador y ese sí permite pellizcar. Es una salida real, no un consuelo, pero conviene
+  saber que la mejor experiencia en móvil es la del fallback.
 - **Los defectos de la fase 2 siguen abiertos** y no se tocaron: el post duplicado en el
   índice del blog, la mitad de la ventana vacía en pantallas anchas, los chips del stack
   en el cuerpo del caso de estudio, la ausencia de modo claro y la franja "empieza por
@@ -325,6 +425,32 @@ legítimo de un secret en este proyecto: su clave de API, que nunca se le entreg
 **Terminado cuando:** el aviso de idioma existe o se decide por ADR que no existe, y el
 caso sin traducción está comprobado contra una pieza real.
 
+### Qué hereda la fase 5, ahora que se llama «diagramas y media»
+
+- **El sistema de diagramas**, que es lo que SPEC §13 pide proponer antes de dibujar el
+  primero: lenguaje de esquemático de circuitos, heredando el vocabulario del riel.
+- **El sangrado**, ya sin prisa. El visor resolvió el ancho de las capturas; lo que queda es
+  el ancho de un **diagrama**, que se lee dentro del flujo del texto y no en un visor.
+- **El campo `diagrama` del esquema de proyecto**, que lleva declarado y sin consumir desde
+  la fase 1. Se decide con el sistema de diagramas, no antes.
+- **El clip corto y mudo** (10-20 s) para los proyectos con demo. Ojo con dos cosas al
+  llegar: `autoplay muted loop` es movimiento y SPEC §13 exige `prefers-reduced-motion`
+  respetado — sin JavaScript **no se puede** condicionar ese atributo, así que la salida
+  limpia es `controls` + `poster` sin autoplay, que cumple por construcción. Y el `<iframe>`
+  de YouTube rompe el invariante «terceros en el HTML → ninguno» que `verify` comprueba en
+  producción.
+- **La demo larga, si llega: R2 con `media.santiagogelvez.com`** — 10 GB gratis y egreso sin
+  costo, así que sigue siendo $0, y el archivo no contamina la historia del repo público.
+  Necesita su ADR. **Monta un CNAME: verificar `dig +short MX santiagogelvez.com` después.**
+  Ojo con no generalizarlo: **las imágenes se quedan en el repositorio a propósito**, porque
+  fuera de él el build no las puede optimizar y se pierden `srcset`, formato moderno y
+  dimensiones declaradas. R2 es para el video, que pesa dos órdenes de magnitud más y no
+  gana nada con ese pipeline.
+
+**Pendiente pequeño de esta sesión:** `src/assets/posts/post-de-ejemplo/placeholder-wide.png`
+es una imagen sintética que existe solo para ejercitar el componente. Se borra cuando entre
+la primera imagen real, junto con los dos párrafos que la presentan en los posts de ejemplo.
+
 ---
 
 ## Plan completo
@@ -336,7 +462,7 @@ caso sin traducción está comprobado contra una pieza real.
 | ✅ 2 | Sistema de diseño | 6-8 | hecho y desplegado |
 | ◐ 3 | Data + CV + pipeline de PDF | 8-10 | desplegado; falta la data real |
 | 4 | i18n de contenido y selector | 4-5 | 2 h × 2 |
-| 5 | Sistema de diagramas | 6-8 | 4 h + 2 h × 2 |
+| 5 | Sistema de diagramas y media | 6-8 | 4 h + 2 h × 2 |
 | 6 | Contenido de lanzamiento (bilingüe) | 18-24 | 2 h × n |
 | 7 | SEO, privacidad, cierre | 4-5 | 2 h × 2 |
 

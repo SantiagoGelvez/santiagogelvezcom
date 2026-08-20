@@ -10,8 +10,9 @@ build: un error de tipeo en una fecha rompe el build en vez de llegar a producci
 sistema de diseño está construido sobre tokens, con tipografías servidas desde el propio
 dominio y sin una línea de JavaScript. El CV navegable y sus cuatro PDF salen de la misma
 data y se regeneran en cada build, con una prueba automatizada que extrae el texto del PDF
-y comprueba que los campos privados no estén. Lo que falta es el contenido real y el
-sistema de diagramas.
+y comprueba que los campos privados no estén. El contenido admite imágenes optimizadas en
+build, que se abren a pantalla completa sin JavaScript. Lo que falta es el contenido real y
+el sistema de diagramas.
 
 ---
 
@@ -24,6 +25,7 @@ sistema de diagramas.
 | Despliegue | GitHub Actions en cada push a `main`; construye, verifica y publica |
 | Contenido | Markdown/MDX validado con esquemas Zod en tiempo de build |
 | Diseño | CSS sobre tokens, sin framework. Tipografías autoalojadas, cero JavaScript |
+| Imágenes | Optimizadas en build con `astro:assets`; visor a pantalla completa con `popover` nativo |
 | SEO | Canonical, `hreflang` entre pares reales, `sitemap.xml`, JSON-LD y breadcrumbs |
 | PDF del CV | Generado imprimiendo la propia ruta `/cv/` con Playwright, verificado con `pdfjs-dist` |
 | Analítica | Sin cookies, sin banner de consentimiento |
@@ -44,7 +46,8 @@ src/lib/content.ts Consultas y las reglas que un esquema no puede ver
 src/lib/cv.ts      El CV como vista sobre la data: filtrado, orden y nombres de archivo
 src/i18n/          Claves de traducción → segmentos de ruta por idioma
 src/styles/        tokens.css (color, tipografía, riel), base.css, prose.css, cv.css
-src/components/    Franja del riel, tarjeta de proyecto, entrada del blog, chips
+src/components/    Franja del riel, tarjeta de proyecto, entrada del blog, chips, figura
+src/assets/        Imágenes fuente del contenido, optimizadas en build (ADR-0031)
 public/fonts/      Las .woff2 servidas desde el dominio, con su licencia OFL
 src/pages/{es,en}/ Un archivo por ruta; el árbol se lee como el mapa del sitio
 scripts/           verify-routes (criterio de terminado), cv-pdf, check-cv-pdf
@@ -68,7 +71,7 @@ coordenada en todas las páginas.
 npm install
 npm run dev       # servidor de desarrollo
 npm run build     # sitio completo: HTML + los dos PDF del CV, todo en dist/
-npm run verify    # build + rutas, hreflang, canonical, títulos y la prueba ATS del PDF
+npm run verify    # build + rutas, hreflang, canonical, títulos, peso de imágenes y prueba ATS
 npm run check     # TypeScript sobre los archivos .astro
 ```
 
@@ -134,6 +137,34 @@ duplicación que esta separación evita.
 
 **No hay que memorizar los campos.** Si falta uno, sobra uno, o una fecha no existe en
 el calendario, el build dice exactamente qué y en qué archivo.
+
+**Una imagen es una línea de markdown.** No hay que importar nada ni instanciar ningún
+componente:
+
+```md
+![Lo que la imagen muestra, para quien no la ve](~/assets/posts/mi-post/flujo.png "La leyenda visible")
+```
+
+El texto entre corchetes es el `alt` —obligatorio: sin él el build se cae— y el
+entrecomillado es la leyenda. El alias `~/` no depende de dónde esté el `.mdx`. El archivo
+va en `src/assets/posts/<slug>/` o `src/assets/projects/<id>/`, **nunca en `public/`**: lo
+de `public/` se sirve tal cual, sin optimizar y sin dimensiones declaradas.
+
+Al pulsarla, la imagen se abre a pantalla completa sobre un fondo opacado, con `Esc`, clic
+fuera y foco gestionados por el navegador. Sin una línea de JavaScript. Eso es lo que
+permite que una captura de dashboard viva pequeña en la columna de lectura y aun así se
+pueda mirar: la columna mide 68 caracteres, y una captura a ese ancho no se lee.
+
+`npm run verify` impone el presupuesto —400 kB por archivo fuente, 500 kB por imagen
+servida, 2.5 MB en total— y **rechaza cualquier fuente con EXIF o XMP incrustado**, que es
+donde viajan el GPS, el modelo del teléfono y a veces el nombre de usuario. Lo que ningún
+script puede revisar es qué se ve *dentro* de una captura: eso está en las reglas
+permanentes de `CLAUDE.md` y es la parte que de verdad importa, porque el repositorio es
+público y una filtración ahí no se corrige borrando.
+
+**Las imágenes se versionan; el video no.** Una captura recortada pesa decenas de kB y
+tiene que estar en el repo para que el build la optimice. Un video pesa dos órdenes de
+magnitud más y no gana nada con ese pipeline, así que irá fuera (fase 5).
 
 ## Dos ideas que explican el resto
 

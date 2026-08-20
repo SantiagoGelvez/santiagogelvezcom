@@ -181,6 +181,22 @@ export const cv = {
 } as const satisfies Record<string, Record<Locale, string>>;
 
 /**
+ * Cadenas de una figura del contenido y de su visor a tamaño completo.
+ *
+ * El visor es un `popover` nativo: el navegador pone `Esc`, el cierre al hacer
+ * clic fuera, el foco y el `::backdrop`, así que el sitio sigue sin una línea
+ * de JavaScript. En un navegador sin soporte —Safari anterior a la 17— el botón
+ * no hace nada, y por eso `fullSize` existe: es un enlace normal a la imagen,
+ * funciona en todas partes y además sobrevive a la impresión.
+ */
+export const figure = {
+  /** Prefijo del nombre accesible del botón: "Ampliar: <alt>". */
+  expand: { es: 'Ampliar', en: 'Expand' },
+  fullSize: { es: 'ver a tamaño completo', en: 'view full size' },
+  close: { es: 'Cerrar', en: 'Close' },
+} as const satisfies Record<string, Record<Locale, string>>;
+
+/**
  * Estado de un proyecto, para el chip de la tarjeta. El vocabulario es cerrado
  * —lo fija el esquema— así que la traducción también puede serlo.
  */

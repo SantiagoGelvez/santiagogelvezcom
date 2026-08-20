@@ -54,6 +54,12 @@ su contenido es publicable. Un error aquí no se corrige borrando: queda en `git
   completo del CV se genera en local y su salida jamás entra al build desplegado.
 - **Nada de nombres de clientes, compañeros ni cifras internas** de Solvo, El Tiempo o
   Tigo.
+- **Una captura filtra lo que el texto nunca filtraría.** Antes de versionar una imagen:
+  nada de nombres de clientes o compañeros, datos reales de producción ni cifras internas
+  de Solvo, El Tiempo o Tigo; y nada de cromo del navegador — pestañas, marcadores, correo
+  o nombre de usuario en una esquina. Se recorta a la región útil. **El nombre del archivo
+  también se publica**: `dashboard-churn-<cliente>.png` pone el cliente en `git log` aunque
+  la imagen esté impecable.
 - El repo registra **qué se decidió y por qué**, nunca **qué se estaba exponiendo**.
 
 ## Al cerrar la sesión
@@ -70,6 +76,12 @@ versiones fijas) sobre Cloudflare Workers con assets estáticos. Sin base de dat
 CMS, sin autenticación, sin nada con estado. Presupuesto de infraestructura: $0/mes,
 sin excepciones. Si parece hacer falta una base de datos, el alcance se salió de
 control: consúltalo antes.
+
+Las imágenes del contenido se versionan en `src/assets/` y se optimizan en build; el video
+irá fuera del repositorio (fase 5). En un MDX se escriben con markdown normal —
+`![alt](~/assets/posts/mi-post/x.png "leyenda")` — y salen como figura con visor sin
+importar nada (ADR-0031). `npm run verify` impone el presupuesto de peso y rechaza
+cualquier fuente con EXIF o XMP incrustado.
 
 El DNS ya está en Cloudflare y el MX de Google Workspace es `1 smtp.google.com`.
 **No tocar los registros MX**: el correo del dominio no puede caerse. Verificar con
