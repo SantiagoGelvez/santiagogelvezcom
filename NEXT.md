@@ -210,6 +210,18 @@ una carrera. Desconéctalo en cuanto confirmes que el nuevo funciona.
 > Si algo sale mal y necesitas publicar ya: `npm run deploy` desde tu computador sigue
 > funcionando igual, con `npx wrangler login` en vez del token.
 
+**Si el paso «Publicar en Cloudflare» falla con `Authentication error [code: 10000]`:** el
+token es válido —wrangler alcanza a identificar la cuenta— pero le falta el permiso
+`Account · Workers Scripts · Edit`. Se arregla editando el token, sin cambiar el secret.
+
+Ojo con el señuelo: wrangler imprime después «Unable to get membership roles… Are you
+missing the `User->Memberships->Read` permission?». Eso es el diagnóstico de `whoami`
+quejándose de que no puede listar roles, **no la causa del fallo**. Añadir ese permiso no
+arregla nada.
+
+El workflow tiene `workflow_dispatch`, así que se relanza desde la pestaña Actions sin
+necesidad de inventar un commit.
+
 ### 1. La data real — es lo único que bloquea la fase 3
 
 **Toda la data es inventada excepto el esqueleto que diste.** Empresas, cargos y periodos
