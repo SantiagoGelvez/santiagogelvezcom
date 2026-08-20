@@ -1,0 +1,16 @@
+---
+/**
+ * Chip de metadato: stack o estado. Sin barras de porcentaje y sin niveles
+ * (SPEC §6) — el esquema tampoco tiene dónde ponerlos.
+ */
+interface Props {
+  /** Vocabulario cerrado: va en versalitas y con fondo. */
+  status?: boolean;
+  /** Nodo vivo: solo el proyecto activo. */
+  live?: boolean;
+}
+
+const { status = false, live = false } = Astro.props;
+---
+
+<li class:list={['chip', { 'chip--status': status, 'chip--live': live }]}><slot /></li>

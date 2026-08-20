@@ -1,16 +1,22 @@
 ---
 import { render } from 'astro:content';
 import Base from '~/layouts/Base.astro';
+import Band from '~/components/Band.astro';
+import Breadcrumbs from '~/components/Breadcrumbs.astro';
+import Chip from '~/components/Chip.astro';
 import { path } from '~/i18n/routes';
+import { ui, sectionLabels, projectStatus } from '~/i18n/ui';
 import { projectsIn, projectAlternates } from '~/lib/content';
-
-export async function getStaticPaths() {
-  const projects = await projectsIn('es');
-  return projects.map(({ record, slug }) => ({ params: { slug }, props: { record } }));
-}
 
 const locale = 'es' as const;
 const section = 'projects' as const;
+
+export async function getStaticPaths() {
+  // El literal, y no la constante `locale`: Astro extrae `getStaticPaths` a su
+  // propio módulo, así que aquí no existe nada del ámbito del frontmatter.
+  const projects = await projectsIn('es');
+  return projects.map(({ record, slug }) => ({ params: { slug }, props: { record } }));
+}
 
 const { record } = Astro.props;
 const { data } = record.entry;
@@ -29,12 +35,46 @@ const { Content } = await render(record.body[locale]);
   canonical={path(locale, section, data.slug[locale])}
   alternates={projectAlternates(record)}
 >
-  <h1>{data.titulo[locale]}</h1>
-  <p class="meta">
-    {data.rol[locale]} · {data.estado} · {data.periodo.inicio}{data.periodo.fin && ` — ${data.periodo.fin}`}
-  </p>
-  <p class="meta">{data.stack.join(' · ')}</p>
-  {data.repo && <p><a href={data.repo}>{data.repo}</a></p>}
+  <Band as="article" node>
+    <Fragment slot="meta">
+      <p>{data.rol[locale]}</p>
+      <p>
+        <time datetime={data.periodo.inicio}>{data.periodo.inicio}</time>
+        {data.periodo.fin && (
+          <Fragment>
+            {' — '}
+            <time datetime={data.periodo.fin}>{data.periodo.fin}</time>
+          </Fragment>
+        )}
+      </p>
+    </Fragment>
 
-  <Content />
+    <Breadcrumbs
+      locale={locale}
+      trail={[
+        { label: sectionLabels[section][locale], href: path(locale, section) },
+        { label: data.titulo[locale] },
+      ]}
+    />
+
+    <h1>{data.titulo[locale]}</h1>
+    <p class="lead">{data.resumen[locale]}</p>
+
+    <ul class="chips">
+      <Chip status live={data.estado === 'activo'}>{projectStatus[data.estado][locale]}</Chip>
+      {data.stack.map((tool) => <Chip>{tool}</Chip>)}
+    </ul>
+
+    {(data.repo || data.demo) && (
+      <p class="more">
+        {data.repo && <a href={data.repo}>{ui.repository[locale]}</a>}
+        {data.repo && data.demo && ' · '}
+        {data.demo && <a href={data.demo}>{ui.demo[locale]}</a>}
+      </p>
+    )}
+
+    <div class="prose">
+      <Content />
+    </div>
+  </Band>
 </Base>

@@ -1,0 +1,61 @@
+---
+import { path, type Locale } from '~/i18n/routes';
+import { sectionLabels, ui } from '~/i18n/ui';
+
+/**
+ * Ruta de navegación (SPEC §10, `BreadcrumbList` «donde aplique»).
+ *
+ * Aplica **solo en las páginas que cuelgan de un índice** —un post, un caso de
+ * estudio, una categoría—, que son las únicas donde hay una ruta que mostrar.
+ * En `/es/blog/` la ruta sería «Inicio / Blog» al lado de un `h1` que ya dice
+ * Blog: ruido, no orientación (ADR-0025).
+ */
+interface Props {
+  locale: Locale;
+  /**
+   * Tramos entre el inicio y la página actual. El último no lleva `href`
+   * porque es la página en la que ya se está.
+   */
+  trail: { label: string; href?: string }[];
+}
+
+const { locale, trail }: Props = Astro.props;
+const site = Astro.site!;
+
+// El inicio lo pone el componente: es la raíz de toda ruta y no tiene sentido
+// repetirlo en cada llamada.
+const items = [{ label: sectionLabels.home[locale], href: path(locale, 'home') }, ...trail];
+
+/*
+ * El JSON-LD sale del **mismo arreglo** que dibuja la ruta, así que lo que ve
+ * Google y lo que ve una persona no pueden contradecirse. Va en el cuerpo y no
+ * en el `<head>` justamente por eso: mantenerlo pegado a su marcado. Google
+ * acepta datos estructurados en cualquier punto del documento.
+ */
+const breadcrumbList = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: items.map((item, index) => ({
+    '@type': 'ListItem',
+    position: index + 1,
+    name: item.label,
+    // El último tramo se declara sin `item`: es la página actual.
+    ...(item.href === undefined ? {} : { item: new URL(item.href, site).href }),
+  })),
+};
+---
+
+<nav class="crumbs" aria-label={ui.breadcrumb[locale]}>
+  <ol>
+    {items.map((item) => (
+      <li>
+        {item.href === undefined ? (
+          <span aria-current="page">{item.label}</span>
+        ) : (
+          <a href={item.href}>{item.label}</a>
+        )}
+      </li>
+    ))}
+  </ol>
+</nav>
+<script type="application/ld+json" is:inline set:html={JSON.stringify(breadcrumbList)} />

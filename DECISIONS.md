@@ -7,6 +7,221 @@ Orden cronológico inverso — lo más reciente arriba.
 
 ---
 
+## ADR-0025 — La ruta de navegación solo en las páginas que cuelgan de un índice
+
+**Fecha:** 2026-08-19
+
+**Decisión.** Los breadcrumbs que SPEC §10 pedía «donde aplique» aparecen en **post, caso
+de estudio y categoría**, y en ningún otro sitio. La ruta de un post es
+`Inicio / Blog / Título`: **la categoría no entra**, porque es una faceta y no un tramo
+de la URL —el post vive en `/es/blog/{slug}/`, no bajo la categoría—. El `BreadcrumbList`
+de datos estructurados se genera del **mismo arreglo** que dibuja la ruta visible, y va en
+el cuerpo del documento, pegado a su marcado, en vez de en el `<head>`.
+
+**Alternativas consideradas.** Ponerla en todas las páginas, incluidos los índices de
+sección, que es lo que hace la mayoría de los generadores. Incluir la categoría en la
+ruta del post, que es habitual y le da a Google un tramo más. Emitir el JSON-LD en el
+`<head>` junto al resto de los metadatos.
+
+**Por qué.** En `/es/blog/` la ruta sería «Inicio / Blog» al lado de un `h1` que ya dice
+Blog: repite en tipografía pequeña lo que el titular y el estado activo de la navegación
+ya dicen. Un breadcrumb orienta cuando se llega desde un buscador a una página profunda,
+y las páginas profundas son exactamente esas tres. Lo de la categoría es una cuestión de
+no mentir: si la ruta declara un tramo que la URL no tiene, la migaja y la dirección se
+contradicen, y la categoría del post ya está en el riel, enlazada. Y el JSON-LD vive
+junto al marcado porque comparten la fuente: separarlos es crear dos sitios donde la
+misma ruta puede quedar distinta.
+
+**Qué se sacrificó.** Google no recibe `BreadcrumbList` en los índices de sección, así
+que en los resultados esas páginas seguirán mostrando la URL en vez de una ruta —es
+tráfico de marca, donde importa poco, pero es una señal menos—. Y al dejar la categoría
+fuera de la ruta se pierde un enlace interno hacia las páginas de categoría desde cada
+post, que son justo las que ADR-0012 quiere ayudar a que crucen el umbral de indexación;
+el enlace del riel lo compensa solo en parte.
+
+---
+
+## ADR-0024 — El marco del sitio se centra; el texto, nunca
+
+**Fecha:** 2026-08-19
+
+**Decisión.** Cabecera, contenido y pie se alinean a un mismo **marco** de 40 rem —42.5
+rem en pantallas de 90 rem o más, donde el cuerpo también sube a 1.125 rem— y ese marco
+se centra en la ventana. El texto de adentro sigue alineado a la izquierda, siempre. La
+cabecera y el pie conservan el filete a sangre completa: lo que se centra es su
+contenido, no su caja, con `padding-inline: max(--page-pad, (100% - --frame) / 2)`.
+
+Dos corolarios que no son adorno:
+
+- **El riel de una pieza no ensancha el marco: cuelga hacia el margen izquierdo** con un
+  margen negativo. Así la columna de lectura cae en la **misma coordenada** en un índice
+  y en un post, y el margen se queda con los metadatos — que es literalmente el sitio de
+  una nota al margen. Esto resuelve el sacrificio que ADR-0023 había aceptado: ir del
+  blog a un post ya no mueve el texto.
+- **El riel colapsa a las 70 rem por geometría, no por móvil**: es el ancho a partir del
+  cual el margen izquierdo deja de tener sitio para el riel más un respiro.
+
+Esto fija además una lectura de SPEC §13: **"nada centrado" se refiere al contenido**
+—el hero centrado, el texto centrado, que la spec descarta por nombre— y no a un
+contenedor centrado con el texto alineado a la izquierda.
+
+**Alternativas consideradas.** Dejarlo anclado a la izquierda con un margen que crece con
+la ventana (de 96 a ~172 px a 1920), que es la lectura literal de §13. Anclarlo y
+**llenar** la derecha con contenido real: índice de secciones en los posts, tarjetas de
+proyecto a dos columnas en el home. Recortar la cabecera y el pie al ancho del marco.
+
+**Por qué.** Con la ventana en 1920 quedaba el **62% de la pantalla vacío a la derecha**:
+el texto ocupaba `96..726` mientras el filete de la cabecera cruzaba los 1920. El marco
+decía una cosa y el contenido otra. Las dos salidas alternativas se probaron y se
+midieron: recortar la cabecera deja su filete cortado en el aire —se ve peor—, y
+ensanchar el bloque de contenido a 52 rem para que el texto llenara más llevó las líneas
+de las tarjetas a ~85 caracteres. El ancho de lectura de 65-75 caracteres no puede pagar
+esa factura, así que el vacío solo se arregla moviendo el bloque o llenándolo con algo
+que no sea prosa.
+
+**Qué se sacrificó.** La lectura literal de "nada centrado", que era una restricción
+escrita por Santiago y que aquí se reinterpreta en vez de cumplirse al pie de la letra.
+Con eso, el sitio deja de ser un documento anclado al borde y se parece más a la
+documentación técnica convencional — que es exactamente el riesgo de "genérico" que §13
+vigila; lo que lo compensa es que la firma nunca estuvo en la posición del bloque sino en
+la barra, el riel y la tipografía. Y el vacío **no desaparece: se reparte**. En un
+monitor ancho sigue habiendo la mitad de la pantalla sin usar, y llenarla con contenido
+de verdad —el índice de secciones a la derecha de un post, las tarjetas a dos columnas—
+queda pendiente para cuando exista ese contenido, en las fases 5 y 6.
+
+---
+
+## ADR-0023 — El riel lleva metadatos de una pieza; los índices no llevan riel
+
+**Fecha:** 2026-08-19
+
+**Decisión.** La maquetación tiene **dos modos**, no uno, y acota lo que ADR-0021 había
+aplicado a todo el sitio:
+
+- **Modo pieza** (`Band.astro`): riel de metadatos reales —categoría, fecha, rol,
+  periodo— más los nodos de los `h2` del cuerpo. Lo usan el post, el caso de estudio y,
+  cuando llegue, el CV.
+- **Modo índice** (`Section.astro`): sin riel. El titular vuelve a la columna de
+  contenido en tipografía display, y las entradas cuelgan de una **barra local** —corta,
+  propia de su lista— que conserva el vocabulario de trazo y derivación donde sí conecta
+  cosas que se pertenecen. Lo usan el home, el blog, los proyectos y las páginas simples.
+
+La regla que decide cuál se usa: **el riel lleva metadatos de una pieza, nunca el título
+de una sección.**
+
+Se apretó además la densidad en la misma tanda: la separación entre franjas baja de 5 a
+3 rem y el relleno de las tarjetas a la mitad. La portada pasa de ~1500 a ~1150 px de
+alto con más contenido a la vista.
+
+**Alternativas consideradas.** Un riel angosto de ~4 rem en todas las páginas, que
+mantiene una sola gramática y solo carga nodo, fecha corta o número de sección. Eliminar
+el riel por completo y dejar el lenguaje de esquemático para los componentes y para los
+diagramas de la fase 5.
+
+**Por qué.** Construido y visto, el riel en un índice transportaba dos palabras en 200 px
+—el 20% del ancho útil— y, peor, degradaba el `h2` a una etiqueta gris de 13 px: la
+página se quedaba sin segundo nivel de jerarquía. Es un error de categoría, no de ajuste:
+un margen anota lo que tiene **al lado**; no titula lo que viene **abajo**. En una pieza
+el mismo margen sí tiene datos que anotar, y en un artículo de largo real los nodos de
+los `h2` lo convierten en un índice del texto en el margen — que era la promesa. No se
+eliminó del todo justamente porque el juicio se hizo sobre contenido de relleno, donde el
+riel se ve en su peor escenario: dominan los índices y la única pieza tiene dos párrafos.
+
+**Qué se sacrificó.** El sitio deja de tener **una** gramática de maquetación y pasa a
+tener dos, así que quien agregue una página tiene que elegir, y elegir mal es fácil; la
+mitigación es que la regla está escrita en `base.css` y que los componentes se llaman
+`Band` y `Section` y no `Layout1` y `Layout2`. La alineación del texto cambia entre tipos
+de página —en un índice arranca en el margen, en una pieza a 200 px—, así que ir del
+blog a un post mueve la columna de lectura: es el precio de que el margen exista solo
+donde sirve. Y la firma estructural queda concentrada en las piezas y en las barras
+locales en lugar de recorrer el sitio entero, que era el atractivo de ADR-0021 y lo que
+la práctica no sostuvo.
+
+---
+
+## ADR-0022 — Las fuentes se versionan en el repositorio y se sirven desde el dominio
+
+**Fecha:** 2026-08-19
+
+**Decisión.** Los cuatro archivos `.woff2` del sistema tipográfico —subconjunto latino de
+Bricolage Grotesque, Literata en redonda y cursiva, e IBM Plex Mono— viven en
+`public/fonts/`, versionados, con sus `@font-face` escritos a mano en
+`src/styles/tokens.css` y un `preload` para las dos que dibujan la primera pantalla. Ni
+el CDN de Google Fonts, ni los paquetes `@fontsource` como dependencia de npm. La
+licencia OFL y la atribución de las tres familias se redistribuyen en
+`public/fonts/OFL.txt`.
+
+**Alternativas consideradas.** El CDN de Google Fonts, que es la ruta por defecto y la
+más cómoda. Los paquetes `@fontsource-variable` en npm, que es la ruta autoalojada
+habitual en Astro. Una pila de fuentes del sistema, que es gratis y no descarga nada.
+
+**Por qué.** El CDN queda descartado por SPEC §11 antes que por rendimiento: es un
+tercero que ve la IP de cada visitante y que habría que nombrar en la política de datos,
+por unas tipografías. Los paquetes de npm resuelven eso pero publican los archivos con
+un hash del build, así que no hay ruta estable que precargar —y el titular es
+exactamente lo que se quiere pintar temprano—, además de sumar tres dependencias con su
+propia cadencia de actualización para un activo que no cambia nunca. Versionarlos da
+rutas estables, `preload`, caché inmutable en Workers y cero dependencias nuevas. La
+pila del sistema era la opción de la fase 1a, y es justamente lo que hacía que el sitio
+no se viera decidido.
+
+**Qué se sacrificó.** Doscientos kilobytes de binarios en un repositorio público, que
+todo el que lo clone se lleva. Las actualizaciones de las fuentes pasan a ser manuales y
+nadie va a avisar de ellas: la mitigación es que una tipografía no tiene parches de
+seguridad y que su versión no urge. Redistribuir la OFL correctamente es trabajo manual,
+y volverá a serlo si algún día hacen falta más pesos o el subconjunto extendido. Y el
+sitio paga 108 KB de fuentes por página que la pila del sistema costaba cero.
+
+---
+
+## ADR-0021 — Sistema de diseño: grafito cálido, cobre y una barra colectora
+
+**Fecha:** 2026-08-19
+
+**Decisión.** El sistema de diseño de SPEC §13 queda fijado así:
+
+- **Paleta de seis tokens**, oscura: fondo grafito **cálido** `#1A1815`, superficie
+  `#221F1B`, regla `#322D27`, tinta `#EDE8E0`, tenue `#A39B90` y un solo acento, cobre
+  `#C98A4B`, reservado a enlaces y estados. Contrastes sobre el fondo: 14.5:1, 6.4:1 y
+  6.1:1.
+- **Tres familias por rol**: Bricolage Grotesque para los titulares, Literata para el
+  cuerpo, IBM Plex Mono para los metadatos —fechas, categorías, estado, stack.
+- **Maquetación de riel y medida**: una columna de metadatos en mono, una barra de 1px y
+  la columna de lectura a 68 caracteres, alineada a la izquierda y con el aire a la
+  derecha. En móvil el riel colapsa y el metadato pasa arriba, pero la barra se queda.
+- **La barra colectora es el elemento firma** de esta fase: nodos donde arranca cada
+  sección, derivaciones de 1px hacia cada entrada. Ninguna línea separa columnas; todas
+  conectan.
+
+**Alternativas consideradas.** Mantener la base azul-negra de la fase 1a y cambiar solo
+el acento. Un acento azul señal frío sobre la misma base cálida. El trío tipográfico
+Archivo + Newsreader, más sobrio. Un cuerpo sans (Public Sans) en lugar del serif, para
+no arriesgar el serif sobre fondo oscuro.
+
+**Por qué.** Los estilos provisionales de la fase 1a habían aterrizado en uno de los tres
+defaults que §13 descarta por nombre: fondo casi negro con un único acento verde. No era
+un diseño a medias, era la ausencia de una decisión. El grafito cálido sale de esa
+familia por el lado que ningún generador toma, y el cobre es la referencia de
+electrónica —pistas de circuito— que conecta con el ángulo de esquemático que §13 quiere
+explorar. La mono en los metadatos da identidad técnica sin caer en el cliché de
+terminal, y la rejilla de riel cumple las tres exigencias de §13 a la vez —asimétrica,
+alineada a la izquierda, 65-75 caracteres— mientras construye el vocabulario visual
+—trazo fino, ángulo recto, nodo— que el sistema de diagramas de la fase 5 va a heredar
+en lugar de inventar de nuevo.
+
+**Qué se sacrificó.** El sistema se acerca a propósito a la familia del default (a) de
+§13 —cálido con acento terroso—, y esa cercanía es el riesgo asumido: lo que lo separa
+es que el fondo es oscuro y el serif es de pantalla y de bajo contraste, no un serif de
+alto contraste sobre crema. Si al usarlo se siente terracota, lo que baja es el croma del
+acento, no la familia. El serif de cuerpo sobre oscuro pierde algo de peso óptico frente
+a una sans, y se acepta por el registro editorial. **El modo claro no existe**: hay
+tokens para agregarlo sin rehacer nada, pero hoy quien lea de día lee en oscuro. Y la
+barra colectora impone que casi todo el contenido viva dentro de una franja del riel:
+una imagen sangrada o un diagrama más ancho que la medida van a necesitar una excepción
+explícita cuando llegue la fase 5, y esa excepción hay que diseñarla, no improvisarla.
+
+---
+
 ## ADR-0020 — El sitio no declara disponibilidad; se negocia por vacante
 
 **Fecha:** 2026-08-19

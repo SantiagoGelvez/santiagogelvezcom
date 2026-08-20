@@ -1,10 +1,16 @@
 ---
 import { path, defaultLocale } from '~/i18n/routes';
 import { ui } from '~/i18n/ui';
+import '~/styles/tokens.css';
+import '~/styles/base.css';
 
 // Una sola página 404 para todo el sitio, en el idioma por defecto. Cloudflare la
 // sirve por `not_found_handling: "404-page"` (ver `wrangler.jsonc`), y en ese punto
 // no hay ruta de la que deducir el idioma con fiabilidad.
+//
+// No usa `Base.astro` a propósito: esa plantilla exige canónica y alternantes de
+// una pieza que aquí no existe. Sí usa los mismos tokens, así que el 404 no
+// puede quedarse con la paleta vieja cuando el sistema cambie.
 const locale = defaultLocale;
 ---
 
@@ -15,26 +21,20 @@ const locale = defaultLocale;
     <title>{ui.notFoundTitle[locale]} — {ui.siteName[locale]}</title>
     <meta name="robots" content="noindex" />
     <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#1A1815" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/bricolage-grotesque-latin-opsz-wght.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/literata-latin-wght.woff2" />
   </head>
   <body>
-    <main>
-      <h1>{ui.notFoundTitle[locale]}</h1>
-      <p>{ui.notFoundBody[locale]}</p>
-      <p><a href={path(locale, 'home')}>{ui.siteName[locale]}</a></p>
+    <main id="contenido">
+      <div class="band">
+        <div class="band-meta"><p>404</p></div>
+        <div class="band-body">
+          <h1>{ui.notFoundTitle[locale]}</h1>
+          <p class="lead">{ui.notFoundBody[locale]}</p>
+          <p class="more"><a href={path(locale, 'home')}>{ui.siteName[locale]}</a></p>
+        </div>
+      </div>
     </main>
-    <style>
-      body {
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        background: #0f1219;
-        color: #eef0f4;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        line-height: 1.6;
-      }
-      main { padding: 3rem max(1.5rem, 6vw); }
-      a { color: #45c4b0; }
-    </style>
   </body>
 </html>

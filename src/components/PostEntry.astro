@@ -1,0 +1,35 @@
+---
+import { path, type Locale } from '~/i18n/routes';
+import { categoryLabels, categorySlugs } from '~/i18n/taxonomy';
+import type { PostRecord } from '~/lib/content';
+
+/**
+ * Entrada del índice del blog: fecha y categoría en mono, titular, y el
+ * resumen cuando el índice es el que manda (no en la portada, donde compite
+ * con los proyectos).
+ */
+interface Props {
+  locale: Locale;
+  post: PostRecord;
+  summary?: boolean;
+  level?: 2 | 3;
+}
+
+const { locale, post, summary = false, level = 3 } = Astro.props;
+const { data } = post.entry;
+const Heading = `h${level}` as 'h2' | 'h3';
+---
+
+<li class="card stub">
+  <p class="meta">
+    <time datetime={data.fecha_publicacion}>{data.fecha_publicacion}</time>
+    {' · '}
+    <a href={path(locale, 'topic', categorySlugs[data.categoria][locale])}>
+      {categoryLabels[data.categoria][locale]}
+    </a>
+  </p>
+  <Heading class="entry-title">
+    <a href={path(locale, 'blog', post.slug)}>{data.titulo}</a>
+  </Heading>
+  {summary && <p>{data.resumen}</p>}
+</li>

@@ -1,0 +1,653 @@
+/*
+ * Maquetación y componentes del sistema de diseño.
+ *
+ * Global y no en estilos con ámbito de componente a propósito: las franjas, las
+ * tarjetas y los chips aparecen en casi todas las rutas, y un sistema de diseño
+ * que vive repartido en quince archivos deja de ser un sistema. Los tokens
+ * están en `tokens.css`; aquí no hay ni un valor de color literal.
+ *
+ * **Dos modos de maquetación, no uno** (ADR-0023):
+ *
+ * - `.band` — modo pieza. Un riel de metadatos reales a la izquierda: categoría,
+ *   fecha, rol, periodo. Lo usan el post, el caso de estudio y el CV, donde el
+ *   margen anota lo que está **al lado**.
+ * - `.section` — modo índice. Sin riel: el titular vuelve a la columna de
+ *   contenido y las entradas cuelgan de una barra local, corta, propia de su
+ *   lista. Lo usan el home, el blog, los proyectos y las páginas simples.
+ *
+ * La regla que separa los dos: el riel lleva metadatos de una pieza, **nunca**
+ * el título de una sección. Un margen anota lo que tiene al lado; no titula lo
+ * que viene abajo. Cuando se usó para lo segundo, el `h2` se degradó a etiqueta
+ * gris y la página se quedó sin segundo nivel de jerarquía.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--accent-wash);
+  color: var(--ink);
+}
+
+/* Movimiento: solo transiciones de estado (SPEC §13). Aun así, quien pide
+   menos movimiento las pierde también. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------------ enlaces */
+
+a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  /* El cobre sobre el crema no llega a 3:1 entre sí, así que el subrayado no es
+     decoración: es lo que distingue un enlace sin depender del color (WCAG
+     1.4.1). Discreto en reposo, sólido al pasar por encima. */
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+  text-underline-offset: 0.18em;
+  transition: text-decoration-color 0.15s ease, color 0.15s ease;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius);
+}
+
+.skip {
+  position: absolute;
+  left: -9999px;
+}
+
+.skip:focus {
+  left: var(--page-pad);
+  top: var(--gap-s);
+  z-index: 2;
+  background: var(--surface);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  padding: var(--gap-s) var(--gap-m);
+  border-radius: var(--radius);
+}
+
+/* ---------------------------------------------------------- cabecera y pie */
+
+/*
+ * El truco que sostiene el marco: el elemento sigue ocupando todo el ancho —así
+ * su filete cruza la pantalla— pero su relleno lateral crece hasta centrar un
+ * bloque de `--frame`. Un contenedor interno haría lo mismo con un `div` más en
+ * cada plantilla; esto es una línea y no toca el marcado.
+ */
+header.site,
+footer.site,
+main {
+  padding-inline: max(var(--page-pad), calc((100% - var(--frame)) / 2));
+}
+
+header.site,
+footer.site {
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  padding-block: var(--gap-m);
+}
+
+header.site {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: var(--gap-s) var(--gap-m);
+  border-bottom: 1px solid var(--rule);
+}
+
+header.site .brand {
+  grid-column: 1;
+  grid-row: 1;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+}
+
+header.site .brand:hover {
+  color: var(--accent);
+}
+
+header.site nav {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+header.site nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--gap-m);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+header.site nav a,
+header.site .lang {
+  color: var(--muted);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+}
+
+header.site nav a:hover,
+header.site .lang:hover {
+  color: var(--ink);
+}
+
+header.site nav a[aria-current='page'] {
+  color: var(--ink);
+  border-bottom-color: var(--accent);
+}
+
+header.site .lang {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+}
+
+/* El defecto conocido de la fase 1a: la cabecera se rompía al envolverse.
+   Aquí no se envuelve — cambia de rejilla: marca e idioma arriba, navegación
+   en una fila propia. */
+@media (max-width: 46rem) {
+  header.site {
+    grid-template-columns: 1fr auto;
+  }
+
+  header.site nav {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+
+  header.site .lang {
+    grid-column: 2;
+  }
+}
+
+footer.site {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-xs) var(--gap-m);
+  margin-top: auto;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+}
+
+footer.site p {
+  margin: 0;
+}
+
+footer.site a {
+  color: var(--muted);
+}
+
+footer.site a:hover {
+  color: var(--ink);
+}
+
+/* -------------------------------------------------------------------- main */
+
+main {
+  width: 100%;
+  padding-block: var(--gap-xl);
+  display: flex;
+  flex-direction: column;
+  /* Sin `gap`: la separación la ponen las propias franjas. Un hueco del flex
+     cortaría el riel de una pieza en cada sección, y una barra cortada deja de
+     ser una barra. */
+}
+
+/* --------------------------------------------------------------- secciones
+ *
+ * Modo índice. Sin riel y sin columna vacía: el ancho de lectura arranca en el
+ * margen de la página, alineado con la marca de la cabecera.
+ */
+
+.section {
+  max-width: var(--measure);
+}
+
+.section + .section {
+  margin-top: var(--gap-xl);
+}
+
+/* El titular de sección vuelve a ser un titular: display, en la columna de
+   contenido, pegado a la lista que agrupa. */
+.section > h2 {
+  margin-bottom: var(--gap-s);
+}
+
+/*
+ * Antetítulo: rol y ciudad en la portada, "temas" en una categoría. Es lo que
+ * sobrevive del riel en las páginas que no lo llevan — el mismo dato, en la
+ * misma mono, arriba en vez de al lado.
+ */
+.kicker {
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 var(--gap-s);
+}
+
+/* ------------------------------------------------------------------- riel
+ *
+ * Modo pieza. La firma de la fase 2: una barra colectora de 1px con un nodo
+ * donde arranca la pieza y otro por cada sección del cuerpo, más derivaciones
+ * hacia las entradas. Ninguna línea separa columnas; todas conectan. Es el
+ * mismo vocabulario —trazo fino, ángulo recto, nodo— que va a usar el sistema
+ * de diagramas de la fase 5.
+ *
+ * En un artículo de largo real, los nodos de los `h2` convierten el margen en
+ * un índice del texto. Ese es el trabajo del riel, y por eso no se usa donde no
+ * hay nada que anotar.
+ */
+
+/*
+ * El riel no ensancha el marco: la franja se corre hacia la izquierda lo que
+ * mide el riel más su canal, así que la **columna de lectura de una pieza cae
+ * exactamente donde cae el texto de un índice** y el margen se queda con los
+ * metadatos. Ir del blog a un post ya no mueve el texto de sitio — que era el
+ * precio que ADR-0023 había aceptado pagar.
+ */
+.band {
+  display: grid;
+  grid-template-columns: var(--rail) minmax(0, 1fr);
+  margin-left: calc(-1 * (var(--rail) + var(--rail-gap)));
+}
+
+.band-meta {
+  padding-right: var(--rail-gap);
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  line-height: 1.5;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  overflow-wrap: break-word;
+}
+
+.band-meta p {
+  margin: 0 0 var(--gap-xs);
+}
+
+.band-body {
+  border-left: 1px solid var(--rule);
+  padding-left: var(--rail-gap);
+  padding-bottom: var(--gap-xl);
+  max-width: var(--measure);
+}
+
+.band:last-child .band-body {
+  padding-bottom: 0;
+}
+
+/* El nodo: donde la sección se conecta a la barra. El halo del color de fondo
+   es lo que corta la línea, igual que en un esquemático. */
+.band-body {
+  position: relative;
+}
+
+.band--node > .band-body::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 0.62em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--bg);
+}
+
+/* La derivación: el guion de 1px que une una barra con una entrada.
+   Dónde empieza (`--stub-x`) y cuánto corre (`--stub-w`) se declaran aparte
+   porque dependen del relleno del bloque que cuelga, y ese relleno cambia entre
+   el riel de una pieza y la barra local de una lista. Derivar uno del otro
+   parecía más elegante y producía guiones de ancho negativo. */
+.stub {
+  position: relative;
+  --stub-x: calc(-1 * var(--rail-gap));
+  --stub-w: calc(var(--rail-gap) - 0.375rem);
+  --stub-top: 0.85em;
+}
+
+.stub::before {
+  content: '';
+  position: absolute;
+  left: var(--stub-x);
+  top: var(--stub-top);
+  width: var(--stub-w);
+  height: 1px;
+  background: var(--rule);
+}
+
+@media (max-width: 70rem) {
+  .band {
+    grid-template-columns: minmax(0, 1fr);
+    margin-left: 0;
+  }
+
+  .band-meta--empty {
+    display: none;
+  }
+
+  /* El riel colapsa: el metadato pasa arriba, pero la línea sigue ahí. */
+  .band-meta {
+    border-left: 1px solid var(--rule);
+    padding-right: 0;
+    padding-left: var(--rail-gap);
+    padding-bottom: var(--gap-s);
+  }
+
+  .band-body {
+    max-width: none;
+  }
+
+  /* Con el riel colapsado no queda espacio para el relleno de la tarjeta: la
+     derivación se dibuja desde el borde y el bloque arranca en el texto. La
+     barra local no cambia — es corta por diseño, así que en móvil funciona
+     igual que en escritorio. */
+  .band .card {
+    margin-left: 0;
+    padding-left: 0;
+    --stub-x: calc(-1 * var(--rail-gap));
+    --stub-w: calc(var(--rail-gap) - 0.375rem);
+  }
+}
+
+/* --------------------------------------------------------------- titulares */
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: var(--size-display);
+  line-height: var(--leading-display);
+  margin: 0 0 var(--gap-m);
+}
+
+h2 {
+  font-size: var(--size-h2);
+  line-height: 1.2;
+  margin: 0 0 var(--gap-m);
+}
+
+h3 {
+  font-size: var(--size-h3);
+  line-height: 1.3;
+  margin: 0 0 var(--gap-s);
+}
+
+/* El titular de una entrada no compite con el de la página: mismo display,
+   tamaño de cuerpo. */
+.entry-title {
+  font-family: var(--font-display);
+  font-size: 1.1875rem;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+  margin: 0 0 var(--gap-xs);
+}
+
+.entry-title a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.entry-title a:hover {
+  color: var(--accent);
+}
+
+.lead {
+  font-size: 1.1875rem;
+  line-height: 1.55;
+  margin: 0 0 var(--gap-m);
+}
+
+.meta {
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* ------------------------------------------------------------------ listas */
+
+.entries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-xs);
+}
+
+/*
+ * La barra local de una lista: 1px que arranca bajo el titular y del que cuelgan
+ * las entradas. Es lo que sobrevive del riel en modo índice, y es donde la línea
+ * sí significa algo — conecta entradas con el titular que las agrupa, en vez de
+ * separar una columna vacía del texto.
+ */
+.entries--bus {
+  border-left: 1px solid var(--rule);
+  padding-left: var(--bus-gap);
+}
+
+/* La entrada simple cuelga desde la línea. */
+.entries--bus > .stub {
+  --stub-x: calc(-1 * var(--bus-gap));
+  --stub-w: calc(var(--bus-gap) - 0.375rem);
+}
+
+/* La tarjeta se corre hasta la línea para que el fondo del hover abarque
+   también su derivación: se ilumina el bloque entero, conector incluido. */
+.entries--bus > .card {
+  margin-left: calc(-1 * var(--bus-gap));
+  padding-left: var(--bus-gap);
+  --stub-x: 0;
+  --stub-w: calc(var(--bus-gap) - 0.375rem);
+}
+
+/* ---------------------------------------------------------------- tarjetas
+ *
+ * Sin borde, sin sombra difusa y sin caja: un bloque colgado de la barra por
+ * su derivación. El margen negativo compensa el relleno para que el texto de
+ * la tarjeta quede alineado con el resto de la columna.
+ */
+
+.card {
+  position: relative;
+  margin-left: calc(-1 * var(--gap-s));
+  padding: var(--gap-xs) var(--gap-s) var(--gap-s);
+  border-radius: var(--radius);
+  transition: background-color 0.15s ease;
+  --stub-x: calc(var(--gap-s) - var(--rail-gap));
+  --stub-w: calc(var(--rail-gap) - var(--gap-s) - 0.375rem);
+  --stub-top: 1.1em;
+}
+
+.card:hover {
+  background: var(--surface);
+}
+
+.card p {
+  margin: 0 0 var(--gap-xs);
+}
+
+.card p:last-child {
+  margin-bottom: 0;
+}
+
+/* ------------------------------------------------------------------- chips */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--gap-xs);
+  list-style: none;
+  margin: 0 0 var(--gap-m);
+  padding: 0;
+}
+
+/* Dentro de una tarjeta la fila de chips es lo último: el aire lo pone el
+   relleno de la tarjeta, no el margen de la lista. */
+.card .chips {
+  margin-bottom: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--gap-xs);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  color: var(--muted);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0.1rem 0.4rem;
+  white-space: nowrap;
+}
+
+/* El estado es vocabulario cerrado, así que sí va en versalitas. El stack no:
+   «dbt» en mayúsculas sería otra herramienta. */
+.chip--status {
+  color: var(--ink);
+  background: var(--surface);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Un proyecto activo lleva nodo: es la señal viva del esquemático, y es el
+   único sitio fuera de enlaces y estados donde aparece el acento. */
+.chip--live::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ------------------------------------------------------------------- notas */
+
+.note {
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  line-height: 1.6;
+  color: var(--muted);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--gap-s) var(--gap-m);
+  margin: 0 0 var(--gap-m);
+}
+
+/* Punteado: lo provisional se ve provisional. */
+.note--placeholder {
+  border-style: dashed;
+}
+
+.note a {
+  color: var(--accent);
+}
+
+/* ---------------------------------------------------------------- migas
+ *
+ * Ruta de navegación. En mono, como todo metadato del sitio: es un dato sobre
+ * dónde está la página, no contenido de la página.
+ */
+
+.crumbs {
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  letter-spacing: 0.02em;
+  margin-bottom: var(--gap-s);
+}
+
+.crumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--gap-xs);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.crumbs li {
+  display: flex;
+  gap: var(--gap-xs);
+  color: var(--muted);
+}
+
+.crumbs li + li::before {
+  content: '/';
+  color: var(--rule);
+}
+
+.crumbs a {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.crumbs a:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+}
+
+.crumbs [aria-current='page'] {
+  color: var(--ink);
+}
+
+/* -------------------------------------------------------------- utilidades */
+
+.more {
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  letter-spacing: 0.02em;
+  margin: var(--gap-m) 0 0;
+}

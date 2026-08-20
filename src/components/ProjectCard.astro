@@ -1,0 +1,33 @@
+---
+import Chip from './Chip.astro';
+import { path, type Locale } from '~/i18n/routes';
+import { projectStatus } from '~/i18n/ui';
+import type { ProjectRecord } from '~/lib/content';
+
+/**
+ * Tarjeta de proyecto: los dos niveles de SPEC §9 empiezan aquí — título, una
+ * línea, stack y estado. Sin borde ni sombra: un bloque colgado de la barra.
+ */
+interface Props {
+  locale: Locale;
+  record: ProjectRecord;
+  slug: string;
+  /** Nivel del titular según dónde se use la tarjeta. */
+  level?: 2 | 3;
+}
+
+const { locale, record, slug, level = 3 } = Astro.props;
+const { data } = record.entry;
+const Heading = `h${level}` as 'h2' | 'h3';
+---
+
+<li class="card stub">
+  <Heading class="entry-title">
+    <a href={path(locale, 'projects', slug)}>{data.titulo[locale]}</a>
+  </Heading>
+  <p>{data.resumen[locale]}</p>
+  <ul class="chips">
+    <Chip status live={data.estado === 'activo'}>{projectStatus[data.estado][locale]}</Chip>
+    {data.stack.map((tool) => <Chip>{tool}</Chip>)}
+  </ul>
+</li>

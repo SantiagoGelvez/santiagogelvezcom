@@ -1,30 +1,62 @@
 ---
 import Base from '~/layouts/Base.astro';
+import Section from '~/components/Section.astro';
+import ProjectCard from '~/components/ProjectCard.astro';
+import PostEntry from '~/components/PostEntry.astro';
 import PlaceholderNotice from '~/components/PlaceholderNotice.astro';
 import { path } from '~/i18n/routes';
-import { ui, sectionLabels, navSections, pageDescriptions } from '~/i18n/ui';
+import { ui, sectionLabels, pageDescriptions } from '~/i18n/ui';
+import { featuredProjects, latestPosts, profileData } from '~/lib/content';
 
 const locale = 'es' as const;
 const section = 'home' as const;
+
+// Portada, no embudo (SPEC §13): quién soy, tres proyectos, últimos posts y
+// contacto. Todo alcanzable con poco scroll y sin una sola llamada a la acción
+// de landing.
+const profile = await profileData();
+const projects = await featuredProjects(locale);
+const posts = await latestPosts(locale);
 ---
 
 <Base
   locale={locale}
   section={section}
-  title={sectionLabels[section][locale]}
+  title={ui.siteName[locale]}
   description={pageDescriptions[section][locale]}
   canonical={path(locale, section)}
   alternates={{ es: path('es', section), en: path('en', section) }}
 >
-  <p class="meta">{ui.city[locale]}</p>
-  <h1>{ui.siteName[locale]}</h1>
-  <p class="muted">{ui.role[locale]}</p>
+  <Section as="div">
+    <p class="kicker">{ui.role[locale]} · {ui.city[locale]}</p>
+    <h1>{profile.nombre}</h1>
+    <p class="lead">{profile.resumen[locale]}</p>
+    <PlaceholderNotice locale={locale} variant="copy" />
+  </Section>
 
-  <PlaceholderNotice locale={locale} />
+  <Section labelledby="projects">
+    <h2 id="projects">{ui.featuredProjects[locale]}</h2>
+    <ul class="entries entries--bus">
+      {projects.map(({ record, slug }) => (
+        <ProjectCard locale={locale} record={record} slug={slug} />
+      ))}
+    </ul>
+    <p class="more"><a href={path(locale, 'projects')}>{ui.allProjects[locale]}</a></p>
+  </Section>
 
-  <ul class="plain">
-    {navSections.map((key) => (
-      <li><a href={path(locale, key)}>{sectionLabels[key][locale]}</a></li>
-    ))}
-  </ul>
+  <Section labelledby="blog">
+    <h2 id="blog">{ui.latestPosts[locale]}</h2>
+    <ul class="entries entries--bus">
+      {posts.map((post) => <PostEntry locale={locale} post={post} />)}
+    </ul>
+    <p class="more"><a href={path(locale, 'blog')}>{ui.allPosts[locale]}</a></p>
+  </Section>
+
+  <Section labelledby="contact">
+    <h2 id="contact">{sectionLabels.contact[locale]}</h2>
+    <ul class="entries entries--bus">
+      <li class="stub"><a href={path(locale, 'contact')}>{ui.contactCta[locale]}</a></li>
+      <li class="stub"><a href={profile.enlaces.github} rel="me">GitHub</a></li>
+    </ul>
+  </Section>
 </Base>

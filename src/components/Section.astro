@@ -1,0 +1,20 @@
+---
+/**
+ * Franja en modo índice: sin riel, el ancho de lectura arranca en el margen de
+ * la página y el titular vive en la columna de contenido.
+ *
+ * La contraparte de `Band.astro`, que es el modo pieza. Cuál se usa lo decide
+ * una sola pregunta (ADR-0023): ¿hay metadatos que anotar al lado del texto, o
+ * solo un título para lo que viene abajo? Lo segundo no es trabajo de un margen.
+ */
+interface Props {
+  as?: 'section' | 'div' | 'article';
+  labelledby?: string;
+}
+
+const { as: Tag = 'section', labelledby }: Props = Astro.props;
+---
+
+<Tag class="section" aria-labelledby={labelledby}>
+  <slot />
+</Tag>

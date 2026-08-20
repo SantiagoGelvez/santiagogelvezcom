@@ -1,6 +1,9 @@
 ---
 import { path, url, otherLocale, localeNames, locales, type Locale, type SectionKey } from '../i18n/routes';
 import { ui, sectionLabels, navSections } from '../i18n/ui';
+import '../styles/tokens.css';
+import '../styles/base.css';
+import '../styles/prose.css';
 
 interface Props {
   locale: Locale;
@@ -54,7 +57,17 @@ const xDefault = alternates['es'];
     <meta name="description" content={description} />
     {noindex && <meta name="robots" content="noindex, follow" />}
     <meta name="color-scheme" content="dark" />
-    <meta name="theme-color" content="#0F1219" />
+    <meta name="theme-color" content="#1A1815" />
+
+    {/*
+      Las dos fuentes que dibujan la primera pantalla: la display del titular y
+      la de cuerpo. Se precargan porque están autoalojadas con ruta estable —un
+      paquete de npm las publica con hash y no habría qué precargar. La mono de
+      los metadatos y la cursiva no se precargan: pesan poco y llegan tarde sin
+      que se note.
+    */}
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/bricolage-grotesque-latin-opsz-wght.woff2" />
+    <link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/literata-latin-wght.woff2" />
     <link rel="canonical" href={new URL(canonical, site).href} />
     {locales.map((l) => {
       const href = alternates[l];
@@ -118,63 +131,5 @@ const xDefault = alternates['es'];
       <p><a href={path(locale, 'privacy')}>{sectionLabels.privacy[locale]}</a></p>
     </footer>
 
-    <style is:global>
-      /* Estilos mínimos y deliberadamente provisionales. El sistema de diseño es
-         la fase 2; esto solo evita que las rutas de relleno se vean rotas.
-         Fuentes del sistema: nada desde el CDN de Google (SPEC §10 y §11). */
-      :root {
-        --bg: #0f1219;
-        --fg: #eef0f4;
-        --muted: #9aa3b2;
-        --accent: #45c4b0;
-        --rule: #232833;
-        --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
-        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      }
-      * { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        background: var(--bg);
-        color: var(--fg);
-        font-family: var(--sans);
-        line-height: 1.6;
-        -webkit-font-smoothing: antialiased;
-      }
-      a { color: var(--accent); text-decoration: none; }
-      a:hover { text-decoration: underline; }
-      a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
-      .skip {
-        position: absolute;
-        left: -9999px;
-      }
-      .skip:focus { left: 1rem; top: 1rem; background: var(--bg); padding: .5rem 1rem; z-index: 1; }
-      header.site, footer.site {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: baseline;
-        gap: 1rem 1.5rem;
-        padding: 1.25rem max(1.5rem, 6vw);
-        font-family: var(--mono);
-        font-size: .875rem;
-      }
-      header.site { border-bottom: 1px solid var(--rule); }
-      footer.site { border-top: 1px solid var(--rule); margin-top: auto; color: var(--muted); }
-      footer.site p { margin: 0; }
-      .brand { color: var(--fg); font-weight: 600; }
-      header.site nav ul {
-        list-style: none; display: flex; flex-wrap: wrap; gap: 1.25rem; margin: 0; padding: 0;
-      }
-      header.site nav a[aria-current="page"] { color: var(--fg); border-bottom: 1px solid var(--accent); }
-      .lang { margin-left: auto; }
-      main { width: 100%; max-width: 46rem; padding: 3rem max(1.5rem, 6vw); }
-      h1 { font-size: clamp(1.75rem, 5vw, 2.5rem); line-height: 1.15; letter-spacing: -.02em; margin: 0 0 1rem; font-weight: 600; }
-      .muted { color: var(--muted); }
-      .meta { font-family: var(--mono); font-size: .8125rem; color: var(--muted); }
-      ul.plain { list-style: none; padding: 0; }
-      ul.plain li { margin: .5rem 0; }
-    </style>
   </body>
 </html>

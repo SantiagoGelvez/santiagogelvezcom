@@ -1,0 +1,152 @@
+/*
+ * Tokens del sistema de diseño (SPEC §13, plan aprobado en ADR-0021 y acotado
+ * en ADR-0023).
+ *
+ * Todo el color, la tipografía y la geometría viven aquí y en ningún otro lado.
+ * Es lo que permite agregar el modo claro después redefiniendo seis valores,
+ * sin tocar una sola regla de maquetación.
+ */
+
+/* ------------------------------------------------------------------ fuentes
+ *
+ * Autoalojadas en `public/fonts/`, servidas desde este dominio. Ni una
+ * petición al CDN de Google: es un tercero que vería la IP de cada visitante
+ * (SPEC §11) y una dependencia de red que no controlo. La licencia y la
+ * atribución de las tres familias están en `public/fonts/OFL.txt`.
+ *
+ * Bricolage trae el eje `opsz`, así que `font-optical-sizing: auto` —el valor
+ * por defecto de CSS— ajusta el dibujo al tamaño real del titular sin que haya
+ * que declarar nada. Ese eje es la razón de que el archivo pese 76 KB y no 41.
+ */
+@font-face {
+  font-family: 'Bricolage Grotesque';
+  font-style: normal;
+  font-weight: 200 800;
+  font-display: swap;
+  src: url('/fonts/bricolage-grotesque-latin-opsz-wght.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Literata';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/literata-latin-wght.woff2') format('woff2');
+}
+
+/* Declarada, no precargada: solo se descarga en páginas que usan cursiva. */
+@font-face {
+  font-family: 'Literata';
+  font-style: italic;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('/fonts/literata-latin-wght-italic.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-mono-latin-400.woff2') format('woff2');
+}
+
+:root {
+  color-scheme: dark;
+
+  /* -------------------------------------------------------------- color
+   *
+   * Grafito cálido y cobre. El cobre es la única fuente de color del sitio y
+   * solo aparece en enlaces y estados; en cuanto decore algo, deja de leerse
+   * como señal. Contrastes sobre `--bg`: tinta 14.5:1, tenue 6.4:1,
+   * acento 6.1:1. Los tres pasan AA con margen, incluido el texto pequeño.
+   */
+  --bg: #1a1815;
+  --surface: #221f1b;
+  --rule: #322d27;
+  --ink: #ede8e0;
+  --muted: #a39b90;
+  --accent: #c98a4b;
+  /* Fondo de estado. Nunca lleva texto encima por sí solo. */
+  --accent-wash: rgba(201, 138, 75, 0.14);
+
+  /* --------------------------------------------------------- tipografía */
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Literata', Georgia, 'Times New Roman', serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --size-display: clamp(2.25rem, 1.55rem + 2.8vw, 3.25rem);
+  --size-h2: clamp(1.375rem, 1.2rem + 0.7vw, 1.75rem);
+  --size-h3: 1.1875rem;
+  --size-body: 1.0625rem;
+  --size-small: 0.9375rem;
+  --size-meta: 0.8125rem;
+
+  --leading-display: 1.05;
+  --leading-body: 1.7;
+
+  /* --------------------------------------------------------- geometría
+   *
+   * El riel: una columna de metadatos en mono, la línea de 1px que los separa
+   * del texto, y la medida de lectura de SPEC §13 (65-75 caracteres).
+   */
+  --rail: 10rem;
+  --rail-gap: 2.5rem;
+  --measure: 68ch;
+
+  /*
+   * El marco del sitio es el ancho de lectura. Cabecera, contenido y pie se
+   * alinean al mismo bloque y ese bloque se centra en la ventana; el texto de
+   * adentro nunca se centra (ADR-0024). El riel de una pieza no ensancha el
+   * marco: cuelga hacia afuera, en el margen izquierdo, que es literalmente
+   * donde va una nota al margen.
+   *
+   * **En `rem` y no en `ch` como `--measure`**, aunque describan lo mismo: `ch`
+   * se resuelve contra la fuente de cada elemento, así que la cabecera —que va
+   * en mono— se centraba con un marco 150 px más angosto que el cuerpo y la
+   * navegación se partía en dos filas. El marco tiene que medir igual en los
+   * tres sitios donde se usa.
+   */
+  --frame: 40rem;
+  --page-pad: max(1.5rem, 5vw);
+
+  /* La barra local de una lista: separa las entradas de su propia línea, no de
+     un margen de página. Es corta a propósito — conecta cosas que ya están
+     juntas, y por eso no cambia en móvil. */
+  --bus-gap: 1.25rem;
+
+  --gap-xs: 0.375rem;
+  --gap-s: 0.75rem;
+  --gap-m: 1.25rem;
+  --gap-l: 2rem;
+  --gap-xl: 3rem;
+
+  /* Radio de 2px en las superficies interactivas. No es el cero dogmático de
+     la maquetación tipo periódico ni la píldora de las tarjetas de plantilla. */
+  --radius: 2px;
+}
+
+/* En pantalla grande el cuerpo sube un punto. Como la medida está en `ch`, el
+   marco entero crece con la tipografía en vez de dejar el texto diminuto en el
+   centro de un monitor de 27 pulgadas. */
+@media (min-width: 90rem) {
+  :root {
+    --size-body: 1.125rem;
+    /* El marco sigue al cuerpo para que la medida en caracteres no cambie. */
+    --frame: 42.5rem;
+  }
+}
+
+/*
+ * El riel colapsa cuando el margen izquierdo deja de tener sitio para él: hacen
+ * falta `--rail` más `--rail-gap`, más un respiro para que el metadato no quede
+ * pegado al borde de la ventana. Con el marco centrado eso ocurre a las 70rem.
+ * Por eso el corte no es el del móvil: es geometría. Debajo, el metadato pasa
+ * arriba del título y la línea se queda al borde — la firma sobrevive.
+ */
+@media (max-width: 70rem) {
+  :root {
+    --rail: 0rem;
+    --rail-gap: 1.125rem;
+  }
+}

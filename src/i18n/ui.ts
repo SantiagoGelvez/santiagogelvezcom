@@ -41,12 +41,50 @@ export const ui = {
     es: 'Ruta de relleno: existe y responde, pero el contenido llega en una fase posterior.',
     en: 'Placeholder route: it exists and responds, but the content lands in a later phase.',
   },
+  /**
+   * Distinto del anterior: aquí la página ya está construida y lo de relleno es
+   * el texto. Decirlo con precisión cuesta una cadena y evita que un aviso
+   * mienta sobre el estado real de la ruta.
+   */
+  placeholderCopy: {
+    es: 'El texto de esta página es de relleno. El contenido real llega con la data y el contenido de lanzamiento.',
+    en: 'The copy on this page is placeholder text. The real content lands with the data and the launch content.',
+  },
+  /** Franja fija del índice del blog (SPEC §9). */
+  startHere: { es: 'Empieza por aquí', en: 'Start here' },
+  featuredProjects: { es: 'Proyectos', en: 'Projects' },
+  latestPosts: { es: 'Del blog', en: 'From the blog' },
+  topics: { es: 'Temas', en: 'Topics' },
+  allProjects: { es: 'Todos los proyectos', en: 'All projects' },
+  allPosts: { es: 'Todo el blog', en: 'The whole blog' },
+  /** Titular del índice cronológico. `allPosts` es texto de enlace, no titular. */
+  postsHeading: { es: 'Todos los posts', en: 'All posts' },
+  contactCta: { es: 'Escríbeme', en: 'Get in touch' },
+  updated: { es: 'Actualizado', en: 'Updated' },
+  /** Nombre accesible de la ruta de navegación (SPEC §10). */
+  breadcrumb: { es: 'Ruta de navegación', en: 'Breadcrumb' },
+  repository: { es: 'Repositorio', en: 'Repository' },
+  demo: { es: 'Demo', en: 'Demo' },
+  emptyCategory: {
+    es: 'Todavía no hay posts en este tema.',
+    en: 'There are no posts in this topic yet.',
+  },
   notFoundTitle: { es: 'Página no encontrada', en: 'Page not found' },
   notFoundBody: {
     es: 'Esa dirección no existe. Prueba desde el inicio.',
     en: 'That address does not exist. Try from the home page.',
   },
 } as const;
+
+/**
+ * Estado de un proyecto, para el chip de la tarjeta. El vocabulario es cerrado
+ * —lo fija el esquema— así que la traducción también puede serlo.
+ */
+export const projectStatus: Record<'activo' | 'terminado' | 'pausado', Record<Locale, string>> = {
+  activo: { es: 'Activo', en: 'Active' },
+  terminado: { es: 'Terminado', en: 'Finished' },
+  pausado: { es: 'Pausado', en: 'Paused' },
+};
 
 /**
  * `meta description` de las páginas de sección: escritas a mano, 150-160

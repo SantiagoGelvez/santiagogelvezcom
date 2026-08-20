@@ -1,4 +1,4 @@
-import { getCollection, type CollectionEntry } from 'astro:content';
+import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 import { locales, path, type Locale } from '~/i18n/routes';
 import { categoryKeys, MIN_POSTS_TO_INDEX, type CategoryKey } from '~/i18n/taxonomy';
 import { SLUG_NO_DIGITS, POST_SLUG_RULE } from '~/lib/slugs';
@@ -98,6 +98,20 @@ export async function postAlternates(key: string): Promise<Partial<Record<Locale
   return alternates;
 }
 
+/* ------------------------------------------------------------------ perfil */
+
+/**
+ * El registro único de `perfil.yml`. Si falta, el sitio no tiene ni nombre ni
+ * ciudad, así que falla el build en lugar de renderizar huecos.
+ */
+export async function profileData() {
+  const entry = await getEntry('profile', 'santiago');
+  if (entry === undefined) {
+    fail('Falta el registro con `id: santiago` en `src/content/data/perfil.yml`.');
+  }
+  return entry.data;
+}
+
 /* -------------------------------------------------------------- proyectos */
 
 export interface ProjectRecord {
@@ -165,6 +179,26 @@ export function projectAlternates(record: ProjectRecord): Partial<Record<Locale,
     alternates[locale] = path(locale, 'projects', record.entry.data.slug[locale]);
   }
   return alternates;
+}
+
+/**
+ * Los tres proyectos de la portada (SPEC §5): los marcados como destacados y,
+ * si no alcanzan, los que siguen en el orden del registro. El home nunca queda
+ * vacío por haber olvidado marcar un `destacado`.
+ */
+export async function featuredProjects(
+  locale: Locale,
+  limit = 3,
+): Promise<{ record: ProjectRecord; slug: string }[]> {
+  const projects = await projectsIn(locale);
+  const featured = projects.filter(({ record }) => record.entry.data.destacado);
+  const rest = projects.filter(({ record }) => !record.entry.data.destacado);
+  return [...featured, ...rest].slice(0, limit);
+}
+
+/** Los últimos posts publicados en un idioma, para la portada. */
+export async function latestPosts(locale: Locale, limit = 3): Promise<PostRecord[]> {
+  return (await postsIn(locale)).slice(0, limit);
 }
 
 /* ------------------------------------------------------------- categorías */

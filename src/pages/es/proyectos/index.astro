@@ -1,5 +1,7 @@
 ---
 import Base from '~/layouts/Base.astro';
+import Section from '~/components/Section.astro';
+import ProjectCard from '~/components/ProjectCard.astro';
 import { path } from '~/i18n/routes';
 import { sectionLabels, pageDescriptions } from '~/i18n/ui';
 import { projectsIn } from '~/lib/content';
@@ -19,15 +21,16 @@ const projects = await projectsIn(locale);
   canonical={path(locale, section)}
   alternates={{ es: path('es', section), en: path('en', section) }}
 >
-  <h1>{sectionLabels[section][locale]}</h1>
+  <Section as="div">
+    <h1>{sectionLabels[section][locale]}</h1>
+    <p class="lead">{pageDescriptions[section][locale]}</p>
+  </Section>
 
-  <ul class="plain">
-    {projects.map(({ record, slug }) => (
-      <li>
-        <a href={path(locale, section, slug)}>{record.entry.data.titulo[locale]}</a>
-        <p>{record.entry.data.resumen[locale]}</p>
-        <p class="meta">{record.entry.data.estado} · {record.entry.data.stack.join(' · ')}</p>
-      </li>
-    ))}
-  </ul>
+  <Section>
+    <ul class="entries entries--bus">
+      {projects.map(({ record, slug }) => (
+        <ProjectCard locale={locale} record={record} slug={slug} level={2} />
+      ))}
+    </ul>
+  </Section>
 </Base>

@@ -1,0 +1,160 @@
+/*
+ * Tipografía del contenido largo: lo que sale de un `.mdx` renderizado.
+ *
+ * Separado de `base.css` porque aquí no se controla el marcado: lo escribe
+ * quien redacta el post. Todo lo que un post pueda producir tiene que verse
+ * bien sin que haya que ponerle clases a mano.
+ */
+
+.prose {
+  max-width: var(--measure);
+  /* Una URL larga o un identificador de cien caracteres no puede empujar la
+     página a desplazarse en horizontal. */
+  overflow-wrap: break-word;
+}
+
+.prose > * {
+  margin-block: 0 var(--gap-m);
+}
+
+.prose > :last-child {
+  margin-bottom: 0;
+}
+
+.prose h2 {
+  position: relative;
+  margin-top: var(--gap-l);
+}
+
+/* Cada sección del cuerpo es otro nodo de la misma barra: el índice del texto
+   se lee en el margen sin necesidad de una tabla de contenidos flotante. */
+.prose h2::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--rail-gap) - 3px);
+  top: 0.55em;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rule);
+  box-shadow: 0 0 0 3px var(--bg);
+}
+
+.prose h3 {
+  margin-top: var(--gap-m);
+}
+
+.prose ul,
+.prose ol {
+  padding-left: 1.25rem;
+}
+
+.prose li {
+  margin-bottom: var(--gap-xs);
+}
+
+.prose li::marker {
+  color: var(--muted);
+}
+
+.prose strong {
+  font-weight: 700;
+}
+
+/* Cita: colgada de una derivación, no de una barra gruesa de color. */
+.prose blockquote {
+  margin-left: 0;
+  padding-left: var(--gap-m);
+  border-left: 1px solid var(--rule);
+  color: var(--muted);
+}
+
+.prose hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin-block: var(--gap-l);
+}
+
+.prose img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius);
+}
+
+/* ------------------------------------------------------------------ código */
+
+.prose code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: 0.05em 0.3em;
+}
+
+.prose pre {
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  line-height: 1.6;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  padding: var(--gap-m);
+  overflow-x: auto;
+}
+
+.prose pre code {
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: inherit;
+}
+
+/*
+ * Resaltado de sintaxis con el tema `css-variables` de Shiki
+ * (`astro.config.mjs`), mapeado a la paleta del sitio. Casi monocromático a
+ * propósito: un bloque de código con siete colores es la primera cosa que
+ * delata una plantilla, y aquí el cobre ya significa algo.
+ */
+:root {
+  --astro-code-foreground: var(--ink);
+  --astro-code-background: var(--surface);
+  --astro-code-token-comment: var(--muted);
+  --astro-code-token-punctuation: var(--muted);
+  --astro-code-token-keyword: var(--ink);
+  --astro-code-token-function: var(--ink);
+  --astro-code-token-constant: var(--accent);
+  --astro-code-token-string: var(--accent);
+  --astro-code-token-string-expression: var(--accent);
+  --astro-code-token-parameter: var(--ink);
+  --astro-code-token-link: var(--accent);
+}
+
+/* ------------------------------------------------------------------ tablas
+ *
+ * SPEC §9 pide una tabla de decisión en cada post, así que la tabla no es un
+ * caso raro: es un elemento de primera clase.
+ */
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--size-small);
+}
+
+.prose th,
+.prose td {
+  text-align: left;
+  vertical-align: top;
+  padding: var(--gap-s) var(--gap-m) var(--gap-s) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.prose th {
+  font-family: var(--font-mono);
+  font-size: var(--size-meta);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}

@@ -3,11 +3,13 @@
 Sitio personal de Santiago Gelvez — ingeniero de datos. Portafolio de proyectos, notas
 técnicas y hoja de vida, bilingüe (es/en).
 
-**Estado:** en línea y en construcción. Producción sirve el esqueleto del sitio —las
-diez secciones en ambos idiomas, 27 rutas— con contenido de relleno mientras se
-desarrolla v1. El contenido y la data ya se validan con esquemas en tiempo de build: un
-error de tipeo en una fecha rompe el build en vez de llegar a producción. Lo que falta
-es el sistema de diseño, el contenido real y el pipeline del CV.
+**Estado:** en línea y en construcción. Producción sirve el sitio completo como
+estructura —las diez secciones en ambos idiomas, 27 rutas— con contenido de relleno
+mientras se desarrolla v1. El contenido y la data se validan con esquemas en tiempo de
+build: un error de tipeo en una fecha rompe el build en vez de llegar a producción. El
+sistema de diseño está construido sobre tokens, con tipografías servidas desde el propio
+dominio y sin una línea de JavaScript. Lo que falta es el contenido real, el pipeline
+del CV y el sistema de diagramas.
 
 ---
 
@@ -18,6 +20,8 @@ es el sistema de diseño, el contenido real y el pipeline del CV.
 | Framework | Astro — estático, TypeScript estricto ([por qué](DECISIONS.md)) |
 | Hosting | Cloudflare Workers con assets estáticos |
 | Contenido | Markdown/MDX validado con esquemas Zod en tiempo de build |
+| Diseño | CSS sobre tokens, sin framework. Tipografías autoalojadas, cero JavaScript |
+| SEO | Canonical, `hreflang` entre pares reales, `sitemap.xml`, JSON-LD y breadcrumbs |
 | PDF del CV | Generado imprimiendo la propia ruta `/cv/` con Playwright |
 | Analítica | Sin cookies, sin banner de consentimiento |
 | Costo | $0/mes |
@@ -35,8 +39,22 @@ src/content.config.ts  Esquemas Zod: lo que un dato tiene que cumplir
 src/content/       Contenido (MDX) y data (YAML), separados por tipo
 src/lib/content.ts Consultas y las reglas que un esquema no puede ver
 src/i18n/          Claves de traducción → segmentos de ruta por idioma
+src/styles/        tokens.css (color, tipografía, riel), base.css, prose.css
+src/components/    Franja del riel, tarjeta de proyecto, entrada del blog, chips
+public/fonts/      Las .woff2 servidas desde el dominio, con su licencia OFL
 src/pages/{es,en}/ Un archivo por ruta; el árbol se lee como el mapa del sitio
 ```
+
+Todo el color y toda la tipografía salen de `src/styles/tokens.css`; el resto del CSS no
+tiene un solo valor literal. Las fuentes están versionadas en el repo y servidas desde el
+propio dominio: el sitio no hace ni una petición a un tercero.
+
+La maquetación tiene **dos modos y una regla** que decide cuál se usa: el riel de
+metadatos —categoría, fecha, rol, periodo— es para una **pieza** (un post, un caso de
+estudio), nunca para titular una sección. Un índice usa el modo sin riel, donde el
+titular vive en la columna de contenido y las entradas cuelgan de una barra local. El
+riel de una pieza cuelga hacia el margen, así que la columna de lectura cae en la misma
+coordenada en todas las páginas.
 
 ## Cómo correrlo
 

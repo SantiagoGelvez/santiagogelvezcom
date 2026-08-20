@@ -1,11 +1,21 @@
 ---
-import { ui } from '../i18n/ui';
-import type { Locale } from '../i18n/routes';
+import { ui } from '~/i18n/ui';
+import type { Locale } from '~/i18n/routes';
 
+/**
+ * Aviso de relleno, punteado para que lo provisional se vea provisional.
+ *
+ * Dos variantes, porque no son lo mismo: `route` es una ruta que existe pero
+ * todavía no tiene página, y `copy` es una página ya construida cuyo texto es
+ * de relleno. Un aviso que confunde las dos miente sobre el estado del sitio.
+ */
 interface Props {
   locale: Locale;
+  variant?: 'route' | 'copy';
 }
 
-const { locale } = Astro.props;
+const { locale, variant = 'route' } = Astro.props;
+const text = variant === 'route' ? ui.placeholderNotice[locale] : ui.placeholderCopy[locale];
 ---
-<p class="meta">{ui.placeholderNotice[locale]}</p>
+
+<p class="note note--placeholder">{text}</p>

@@ -1,22 +1,27 @@
 ---
 import Base from '~/layouts/Base.astro';
+import Section from '~/components/Section.astro';
+import Breadcrumbs from '~/components/Breadcrumbs.astro';
+import PostEntry from '~/components/PostEntry.astro';
 import { path } from '~/i18n/routes';
-import { pageDescriptions } from '~/i18n/ui';
+import { ui, sectionLabels, pageDescriptions } from '~/i18n/ui';
 import { categoryKeys, categorySlugs, categoryLabels, categoryDescriptions } from '~/i18n/taxonomy';
 import { postsInCategory, categoryIsIndexed } from '~/lib/content';
+
+const locale = 'es' as const;
+const section = 'topic' as const;
 
 // Las tres categorías son fijas (SPEC §9) y se construyen desde el día uno,
 // aunque nazcan vacías: crear las rutas después obligaría a cambiar la
 // navegación (ADR-0012).
 export function getStaticPaths() {
+  // El literal, y no la constante `locale`: Astro extrae `getStaticPaths` a su
+  // propio módulo, así que aquí no existe nada del ámbito del frontmatter.
   return categoryKeys.map((category) => ({
     params: { slug: categorySlugs[category]['es'] },
     props: { category },
   }));
 }
-
-const locale = 'es' as const;
-const section = 'topic' as const;
 
 const { category } = Astro.props;
 const posts = await postsInCategory(locale, category);
@@ -40,15 +45,25 @@ const alternates = {
   alternates={alternates}
   noindex={!indexed}
 >
-  <h1>{categoryLabels[category][locale]}</h1>
-  <p>{categoryDescriptions[category][locale]}</p>
+  <Section as="div">
+    <Breadcrumbs
+      locale={locale}
+      trail={[
+        { label: sectionLabels.blog[locale], href: path(locale, 'blog') },
+        { label: categoryLabels[category][locale] },
+      ]}
+    />
+    <h1>{categoryLabels[category][locale]}</h1>
+    <p class="lead">{categoryDescriptions[category][locale]}</p>
+  </Section>
 
-  <ul class="plain">
-    {posts.map((post) => (
-      <li>
-        <a href={path(locale, 'blog', post.slug)}>{post.entry.data.titulo}</a>
-        <span class="meta"> · {post.entry.data.fecha_publicacion}</span>
-      </li>
-    ))}
-  </ul>
+  <Section>
+    {posts.length === 0 ? (
+      <p class="muted">{ui.emptyCategory[locale]}</p>
+    ) : (
+      <ul class="entries entries--bus">
+        {posts.map((post) => <PostEntry locale={locale} post={post} summary level={2} />)}
+      </ul>
+    )}
+  </Section>
 </Base>

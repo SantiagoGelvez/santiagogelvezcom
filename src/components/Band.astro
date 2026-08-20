@@ -1,0 +1,40 @@
+---
+/**
+ * Modo pieza: la columna de metadatos en mono, la barra colectora de 1px y la
+ * columna de lectura.
+ *
+ * **Solo para piezas** — post, caso de estudio, CV—, donde el margen anota lo
+ * que tiene al lado: categoría, fecha, rol, periodo. Un índice usa
+ * `Section.astro`: ahí el margen no tendría nada que anotar y el titular
+ * terminaría degradado a etiqueta gris (ADR-0023).
+ *
+ * El nodo (`node`) marca el arranque de la pieza sobre la barra. No se pone en
+ * todas las franjas: si todo es un nodo, ninguno señala nada.
+ */
+interface Props {
+  node?: boolean;
+  /** Etiqueta del contenedor. `section` solo cuando la franja tiene titular. */
+  as?: 'section' | 'div' | 'article';
+  labelledby?: string;
+}
+
+// Anotado y no inferido: con `Tag` dinámico, el chequeo no alcanza a ligar
+// `Props` a `Astro.props` por su cuenta.
+const { node = false, as: Tag = 'section', labelledby }: Props = Astro.props;
+const hasMeta = Astro.slots.has('meta');
+---
+
+<Tag class:list={['band', { 'band--node': node }]} aria-labelledby={labelledby}>
+  {hasMeta ? (
+    <div class="band-meta">
+      <slot name="meta" />
+    </div>
+  ) : (
+    /* Sin metadatos la columna sigue existiendo: es lo que mantiene la barra
+       en la misma vertical en todas las franjas de la página. */
+    <div class="band-meta band-meta--empty"></div>
+  )}
+  <div class="band-body">
+    <slot />
+  </div>
+</Tag>

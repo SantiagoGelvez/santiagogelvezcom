@@ -1,18 +1,23 @@
 ---
 import { render } from 'astro:content';
 import Base from '~/layouts/Base.astro';
+import Band from '~/components/Band.astro';
+import Breadcrumbs from '~/components/Breadcrumbs.astro';
+import TranslationNotice from '~/components/TranslationNotice.astro';
 import { path, otherLocale } from '~/i18n/routes';
-import { ui } from '~/i18n/ui';
+import { ui, sectionLabels } from '~/i18n/ui';
 import { categoryLabels, categorySlugs } from '~/i18n/taxonomy';
 import { postsIn, postAlternates } from '~/lib/content';
 
+const locale = 'es' as const;
+const section = 'blog' as const;
+
 export async function getStaticPaths() {
+  // El literal, y no la constante `locale`: Astro extrae `getStaticPaths` a su
+  // propio módulo, así que aquí no existe nada del ámbito del frontmatter.
   const posts = await postsIn('es');
   return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
 }
-
-const locale = 'es' as const;
-const section = 'blog' as const;
 
 const { post } = Astro.props;
 const { data } = post.entry;
@@ -34,18 +39,37 @@ const onlyInThisLanguage = alternates[other] === undefined;
   canonical={path(locale, section, post.slug)}
   alternates={alternates}
 >
-  {onlyInThisLanguage && (
-    <p class="meta" lang={other}>{ui.noTranslation[other]}</p>
-  )}
+  <Band as="article" node>
+    <Fragment slot="meta">
+      <p>
+        <a href={path(locale, 'topic', categorySlugs[data.categoria][locale])}>
+          {categoryLabels[data.categoria][locale]}
+        </a>
+      </p>
+      <p><time datetime={data.fecha_publicacion}>{data.fecha_publicacion}</time></p>
+      {data.fecha_actualizacion && (
+        <p>
+          {ui.updated[locale]}{' '}
+          <time datetime={data.fecha_actualizacion}>{data.fecha_actualizacion}</time>
+        </p>
+      )}
+    </Fragment>
 
-  <h1>{data.titulo}</h1>
-  <p class="meta">
-    <a href={path(locale, 'topic', categorySlugs[data.categoria][locale])}>
-      {categoryLabels[data.categoria][locale]}
-    </a>
-    {' · '}{data.fecha_publicacion}
-    {data.fecha_actualizacion && ` · ${data.fecha_actualizacion}`}
-  </p>
+    <Breadcrumbs
+      locale={locale}
+      trail={[
+        { label: sectionLabels[section][locale], href: path(locale, section) },
+        { label: data.titulo },
+      ]}
+    />
 
-  <Content />
+    {onlyInThisLanguage && <TranslationNotice locale={locale} />}
+
+    <h1>{data.titulo}</h1>
+    <p class="lead">{data.resumen}</p>
+
+    <div class="prose">
+      <Content />
+    </div>
+  </Band>
 </Base>

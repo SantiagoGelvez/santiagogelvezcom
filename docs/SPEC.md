@@ -304,6 +304,7 @@ Dos niveles: tarjeta en el índice (título, una línea, stack, estado) y págin
 - **Títulos:** patrón `Título — Santiago Gelvez`. Home: `Santiago Gelvez — Ingeniero de Datos`.
 - **Meta description:** el campo `resumen` de cada pieza, escrito a mano, 150-160 caracteres. Nunca truncado automáticamente del primer párrafo.
 - **JSON-LD:** `Person` en el home, con `sameAs` hacia GitHub y LinkedIn — es lo que le permite a Google entender que las tres cosas son la misma persona, y eso importa mucho cuando la marca es mi nombre. `BlogPosting` en los posts. `BreadcrumbList` donde aplique.
+- **Ruta de navegación (breadcrumbs).** Implementada en la fase 2. «Donde aplique» quedó resuelto como **las páginas que cuelgan de un índice**: post, caso de estudio y categoría. Los índices de sección no la llevan —«Inicio / Blog» junto a un `h1` que dice Blog es ruido, no orientación— y la categoría **no** aparece en la ruta de un post, porque es una faceta y no un tramo de la URL. El `BreadcrumbList` se genera del mismo arreglo que dibuja la ruta visible. Ver ADR-0025.
 - **Open Graph:** imagen generada en build a partir del título. Diseñar treinta imágenes a mano no va a pasar; una plantilla que se rellena sola, sí.
 - **Rendimiento como SEO:** fuentes servidas localmente, imágenes en formato moderno con dimensiones declaradas, JavaScript mínimo. Core Web Vitals en verde debe ser el estado por defecto, no un esfuerzo posterior.
 - **Fuentes autohospedadas, nunca desde el CDN de Google.** No es solo rendimiento: cargar `fonts.googleapis.com` transmite la IP de cada visitante a Google, lo que choca con §11. El sitio anterior lo hacía; el nuevo no.
@@ -417,6 +418,8 @@ Tampoco quiero los tres defaults en los que converge el diseño generado por IA:
 ### Proceso de diseño
 
 Antes de escribir CSS, entrégame un plan compacto: paleta de 4-6 valores con nombre, las tipografías para cada rol, un concepto de maquetación con wireframes en ASCII, y cuál es el elemento firma. Revisa ese plan contra este brief y dime qué cambiaste por genérico. Solo después construye.
+
+**Estado: ejecutado en la fase 2.** El plan se entregó, se aprobó y quedó registrado en **ADR-0021** —paleta de seis tokens, tres familias por rol y la barra colectora como elemento firma— con **ADR-0022** para el alojamiento de las tipografías. Lo de arriba queda como el proceso que se siguió, no como trabajo pendiente. Si el sistema se cambia, se cambia con un ADR nuevo que reemplace al 0021; esta sección ya no decide nada.
 
 ### Piso de calidad (no negociable)
 

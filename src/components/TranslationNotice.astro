@@ -1,0 +1,20 @@
+---
+import { ui } from '~/i18n/ui';
+import { otherLocale, type Locale } from '~/i18n/routes';
+
+/**
+ * Aviso de pieza sin traducir (SPEC §8). Va **escrito en el otro idioma** y al
+ * principio de la página: quien no lee este idioma lo decide en dos segundos.
+ * De ahí el `lang` en el elemento — sin él, un lector de pantalla lo leería con
+ * la fonética equivocada.
+ */
+interface Props {
+  /** Idioma de la página, no el del aviso. */
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const other = otherLocale(locale);
+---
+
+<p class="note" lang={other}>{ui.noTranslation[other]}</p>

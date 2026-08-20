@@ -1,7 +1,9 @@
 ---
 import Base from '~/layouts/Base.astro';
+import Section from '~/components/Section.astro';
+import PostEntry from '~/components/PostEntry.astro';
 import { path } from '~/i18n/routes';
-import { sectionLabels, pageDescriptions } from '~/i18n/ui';
+import { ui, sectionLabels, pageDescriptions } from '~/i18n/ui';
 import { categorySlugs, categoryKeys, categoryLabels } from '~/i18n/taxonomy';
 import { postsIn, postsInCategory, assertReferencesResolve } from '~/lib/content';
 
@@ -36,32 +38,36 @@ const categories = await Promise.all(
   canonical={path(locale, section)}
   alternates={{ es: path('es', section), en: path('en', section) }}
 >
-  <h1>{sectionLabels[section][locale]}</h1>
+  <Section as="div">
+    <h1>{sectionLabels[section][locale]}</h1>
+    <p class="lead">{pageDescriptions[section][locale]}</p>
+  </Section>
 
   {pillars.length > 0 && (
-    <section>
-      <h2>Start here</h2>
-      <ul class="plain">
-        {pillars.map((post) => (
-          <li><a href={path(locale, section, post.slug)}>{post.entry.data.titulo}</a></li>
-        ))}
+    <Section labelledby="start-here">
+      <h2 id="start-here">{ui.startHere[locale]}</h2>
+      <ul class="entries entries--bus">
+        {pillars.map((post) => <PostEntry locale={locale} post={post} summary />)}
       </ul>
-    </section>
+    </Section>
   )}
 
-  <ul class="plain">
-    {posts.map((post) => (
-      <li>
-        <a href={path(locale, section, post.slug)}>{post.entry.data.titulo}</a>
-        <span class="meta"> · {categoryLabels[post.entry.data.categoria][locale]} · {post.entry.data.fecha_publicacion}</span>
-      </li>
-    ))}
-  </ul>
+  <Section labelledby="all-posts">
+    <h2 id="all-posts">{ui.postsHeading[locale]}</h2>
+    <ul class="entries entries--bus">
+      {posts.map((post) => <PostEntry locale={locale} post={post} />)}
+    </ul>
+  </Section>
 
-  <h2>Topics</h2>
-  <ul class="plain">
-    {categories.map((category) => (
-      <li><a href={category.href}>{category.label}</a> <span class="meta">({category.count})</span></li>
-    ))}
-  </ul>
+  <Section labelledby="topics">
+    <h2 id="topics">{ui.topics[locale]}</h2>
+    <ul class="entries entries--bus">
+      {categories.map((category) => (
+        <li class="stub">
+          <a href={category.href}>{category.label}</a>
+          <span class="meta"> ({category.count})</span>
+        </li>
+      ))}
+    </ul>
+  </Section>
 </Base>
