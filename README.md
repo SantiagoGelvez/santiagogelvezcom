@@ -5,6 +5,8 @@ técnicas y hoja de vida, bilingüe (es/en).
 
 **Estado:** en construcción. Producción sirve el esqueleto de rutas del sitio —las diez
 secciones existen en ambos idiomas— con contenido de relleno mientras se desarrolla v1.
+El contenido y la data ya se validan con esquemas en tiempo de build: un error de tipeo
+en una fecha rompe el build en vez de llegar a producción.
 
 ---
 
@@ -28,6 +30,9 @@ CLAUDE.md          Reglas de trabajo e índice de documentación
 NEXT.md            Estado actual y siguiente paso
 DECISIONS.md       Registro de decisiones (ADR)
 docs/SPEC.md       Especificación: rutas, modelo de datos, plantillas, SEO
+src/content.config.ts  Esquemas Zod: lo que un dato tiene que cumplir
+src/content/       Contenido (MDX) y data (YAML), separados por tipo
+src/lib/content.ts Consultas y las reglas que un esquema no puede ver
 src/i18n/          Claves de traducción → segmentos de ruta por idioma
 src/pages/{es,en}/ Un archivo por ruta; el árbol se lee como el mapa del sitio
 ```
@@ -41,8 +46,9 @@ npm run verify    # build + comprueba las rutas, hreflang, canonical y títulos
 npm run check     # TypeScript sobre los archivos .astro
 ```
 
-`npm run verify` es el criterio de terminado escrito como código: si una ruta del mapa
-del sitio deja de existir, o un `hreflang` apunta a una página que no está, el comando
+`npm run verify` es el criterio de terminado escrito como código: deriva las rutas
+esperadas del contenido y falla si al build le falta una **o si le sobra**. Si una ruta
+del mapa del sitio deja de existir, o un `hreflang` apunta a una página que no está, el comando
 falla. La alternativa era una lista en un documento que nadie vuelve a leer.
 
 ## Dos ideas que explican el resto
