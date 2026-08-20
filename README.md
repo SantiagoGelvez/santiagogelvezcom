@@ -3,7 +3,8 @@
 Sitio personal de Santiago Gelvez — ingeniero de datos. Portafolio de proyectos, notas
 técnicas y hoja de vida, bilingüe (es/en).
 
-**Estado:** en construcción. Producción sirve un placeholder mientras se desarrolla v1.
+**Estado:** en construcción. Producción sirve el esqueleto de rutas del sitio —las diez
+secciones existen en ambos idiomas— con contenido de relleno mientras se desarrolla v1.
 
 ---
 

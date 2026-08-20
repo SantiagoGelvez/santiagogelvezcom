@@ -69,13 +69,13 @@ El home le habla al reclutador LATAM. No intentes que le hable a las tres a la v
 - **Sitio 100% estático.** Sin servidor, sin base de datos, sin runtime que mantener. La excepción que se llegó a contemplar —un handler para emitir 410— no hace falta: Search Console confirmó que no hay rutas que retirar. Ver la actualización del ADR-0005.
 - **Contenido en archivos versionados en git.** Nada de CMS.
 - **Hosting: Cloudflare Workers con assets estáticos** (no Pages). Cloudflare recomienda Workers para proyectos nuevos y concentra ahí todo el desarrollo de features; Pages sigue soportado pero sin inversión nueva. Gratis, ancho de banda no medido, sin cláusula de uso no comercial. Ver ADR-0005.
-- **Dominio: registrado en Namecheap.** **Los nameservers ya están delegados a Cloudflare** (verificado 2026-08-19: `melina/dale.ns.cloudflare.com`) y el MX de Google Workspace está intacto (`1 smtp.google.com`). No queda migración de DNS pendiente, solo repuntar el origen desde S3. **No tocar los registros MX**: el correo no puede caerse. Verificar con `dig +short MX santiagogelvez.com` después de cualquier cambio de origen.
+- **Dominio: registrado en Namecheap.** **Los nameservers ya están delegados a Cloudflare** (verificado 2026-08-19: `melina/dale.ns.cloudflare.com`) y el MX de Google Workspace está intacto (`1 smtp.google.com`). **El corte a Workers está hecho** (2026-08-19): el dominio ya sirve desde el Worker, S3 salió del camino y no queda migración pendiente. **No tocar los registros MX**: el correo no puede caerse. Verificar con `dig +short MX santiagogelvez.com` después de cualquier cambio de origen.
 - **Deploy automático desde git push.** Con previews por rama.
 - **Framework: Astro.** Decisión cerrada, ver ADR-0002. El argumento decisivo no es el soporte de Markdown sino §6: la validación de los archivos de data por esquema en tiempo de build es un requisito nombrado, y Astro la ofrece como primitiva (Content Layer + esquemas Zod) en lugar de pegamento propio. TypeScript estricto, integraciones limitadas a `mdx` y `sitemap`, versiones fijas. El precio aceptado es deuda de actualización: revisión trimestral anotada en `NEXT.md`.
 
 **Descartados y por qué** (regístralo en `DECISIONS.md`):
 
-- **AWS S3 + CloudFront.** No es una alternativa hipotética: **es el hosting actual**, y salir de él es lo que deja limpia la cuenta AWS. Mi free tier terminó y quiero conservar esa cuenta para proyectos de datos, que es donde el gasto compra aprendizaje relevante. Además no da build automático sin montar CI aparte.
+- **AWS S3.** No era una alternativa hipotética: **era el hosting hasta el 2026-08-19**, y salir de él es lo que deja limpia la cuenta AWS. (Resultó no haber CloudFront de por medio: Cloudflare proxeaba directo al endpoint de website de S3, así que no hubo distribución que desmontar. El bucket sigue en pie unos días como rollback.) Mi free tier terminó y quiero conservar esa cuenta para proyectos de datos, que es donde el gasto compra aprendizaje relevante. Además no da build automático sin montar CI aparte.
 - **Vercel.** El plan Hobby está restringido a uso personal no comercial. Si algún día uso el sitio para captar clientes de consultoría, entro en zona gris.
 - **Base de datos (Supabase u otra).** No hay nada que guardar en runtime. Además el tier gratuito de Supabase pausa proyectos por inactividad, que es exactamente el peor comportamiento para un sitio personal de tráfico irregular.
 
@@ -441,8 +441,8 @@ No los construyas. No dejes andamiaje para ellos salvo donde se indique.
 
 El sitio está listo para publicar cuando:
 
-1. Las diez rutas de §5 existen en español e inglés y ninguna da 404.
-2. El selector de idioma funciona en todas las páginas, incluyendo el caso de contenido sin traducción.
+1. ◐ *Estructura cumplida en la fase 1a:* las diez rutas de §5 existen en español e inglés, responden 200 en producción y `npm run verify` lo comprueba en cada build. Falta el contenido real, no las rutas.
+2. ◐ *Mecanismo cumplido en la fase 1a:* el selector resuelve por clave de traducción y el caso sin traducción está construido y verificado contra una pieza de relleno. Queda ejercitarlo con contenido real.
 3. Los dos casos de estudio están publicados **en ambos idiomas** y los dos posts en español, con el cruce entre ellos.
 4. `/es/cv/` y `/en/cv/` renderizan desde la data. Los **dos PDFs públicos** se generan en build y pasan la prueba automatizada de extracción de texto; los dos completos se generan en local con el mismo pipeline.
 5. La prueba de extracción confirma que **el teléfono no aparece en ninguna variante pública**, y los PDFs completos no están en el directorio desplegado ni en el repositorio.
