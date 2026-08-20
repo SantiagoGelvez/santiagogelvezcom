@@ -60,6 +60,13 @@ workers.dev                       → error 1042, no sirve nada
 dig +short MX santiagogelvez.com  → 1 smtp.google.com  (correo intacto)
 ```
 
+**La fase 1b también está desplegada y comprobada en vivo**: las 27 rutas responden
+200, `/es/blog/tema/fundamentos/` se indexa y las otras cinco categorías salen con
+`noindex`, y el post en estado borrador responde 404. Dos URLs de relleno de la fase 1a
+—`/es/blog/tema/tema-de-ejemplo/` y `/en/blog/topic/sample-topic/`— pasaron a 404 al
+entrar la taxonomía real. Se decidió no redirigirlas: llevaban menos de un día en línea
+y nunca fueron parte del mapa del sitio de SPEC §5.
+
 `preview_urls` ya viene en `false` por defecto en wrangler 4.124.0, así que
 `workers_dev` solo era suficiente. **Ojo con esto al hacer el pendiente 1 de abajo:**
 las previews por rama son URLs `workers.dev`, así que habrá que poner
