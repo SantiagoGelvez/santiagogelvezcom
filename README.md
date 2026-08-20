@@ -9,8 +9,9 @@ mientras se desarrolla v1. El contenido y la data se validan con esquemas en tie
 build: un error de tipeo en una fecha rompe el build en vez de llegar a producción. El
 sistema de diseño está construido sobre tokens, con tipografías servidas desde el propio
 dominio y sin una línea de JavaScript. El CV navegable y sus cuatro PDF salen de la misma
-data, con una prueba automatizada que extrae el texto del PDF y comprueba que los campos
-privados no estén. Lo que falta es el contenido real y el sistema de diagramas.
+data y se regeneran en cada build, con una prueba automatizada que extrae el texto del PDF
+y comprueba que los campos privados no estén. Lo que falta es el contenido real y el
+sistema de diagramas.
 
 ---
 
@@ -20,6 +21,7 @@ privados no estén. Lo que falta es el contenido real y el sistema de diagramas.
 |---|---|
 | Framework | Astro — estático, TypeScript estricto ([por qué](DECISIONS.md)) |
 | Hosting | Cloudflare Workers con assets estáticos |
+| Despliegue | GitHub Actions en cada push a `main`; construye, verifica y publica |
 | Contenido | Markdown/MDX validado con esquemas Zod en tiempo de build |
 | Diseño | CSS sobre tokens, sin framework. Tipografías autoalojadas, cero JavaScript |
 | SEO | Canonical, `hreflang` entre pares reales, `sitemap.xml`, JSON-LD y breadcrumbs |

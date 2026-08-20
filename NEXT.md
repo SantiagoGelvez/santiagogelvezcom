@@ -9,16 +9,15 @@ Estado del repositorio y siguiente paso. Se actualiza al final de cada sesión.
 **Fecha:** 2026-08-20
 **Última sesión:** Fase 3 — el CV navegable, el pipeline de los cuatro PDF, la prueba ATS,
 sacar los datos de contacto del HTML y mudar el despliegue a GitHub Actions
-**Estado del repo:** limpio y desplegable, **sin commitear y sin desplegar todavía**.
-`npm run verify` pasa (27 rutas, 4 archivos de soporte, 2 PDF) y `astro check` sale con
-0 errores, 0 avisos y 0 hints.
+**Estado del repo:** limpio, empujado y **desplegado**. `npm run verify` pasa (27 rutas,
+4 archivos de soporte, 2 PDF) y `astro check` sale con 0 errores, 0 avisos y 0 hints.
 `git@github.com:SantiagoGelvez/santiagogelvezcom.git` · rama `main` · público.
 **Fase del proyecto:** 0, 1, 2 completas. Fase 3 **completa en mecanismo**; le falta la
 data real, que es trabajo de Santiago y no de ingeniería (ver pendientes).
 **Infraestructura:** Cloudflare para servir, GitHub Actions para construir y publicar
-(ADR-0030). Sigue costando $0/mes — repo público, minutos de Actions ilimitados.
-**Pendiente de Santiago:** crear el token, poner los dos secrets y desconectar Workers
-Builds. Hasta que eso pase, el push **no** publica.
+(ADR-0030). Sigue costando $0/mes — repo público, minutos de Actions ilimitados. La tubería
+nueva está **probada de punta a punta**: el robot instaló Chromium, generó los PDF, corrió
+`verify` y publicó.
 
 ```
 santiagogelvezcom/
@@ -186,42 +185,6 @@ git ls-files | grep .pdf           → 0 archivos versionados                   
 
 ## Pendientes para mí (Santiago)
 
-### 0. Conectar el despliegue nuevo — bloquea publicar
-
-**Hasta que esto esté hecho, `git push` no publica nada.** El workflow está escrito y
-verificado en local, pero le faltan las llaves.
-
-1. **Crear el token.** Cloudflare → *My Profile* → *API Tokens* → *Create Token* →
-   *Custom token*. Un solo permiso: **Account · Workers Scripts · Edit**, acotado a tu
-   cuenta. Copia el valor: solo se muestra una vez.
-2. **Guardar dos secrets** en GitHub → *Settings* → *Secrets and variables* → *Actions*:
-   - `CLOUDFLARE_API_TOKEN` — el del paso 1
-   - `CLOUDFLARE_ACCOUNT_ID` — está en la portada de tu cuenta de Cloudflare, en la URL del
-     panel, o con `npx wrangler whoami`
-3. **Empujar y mirar la pestaña Actions.** Si el workflow termina en verde y el sitio
-   responde, sigue al paso 4.
-4. **Desconectar Workers Builds** en Cloudflare → tu Worker → *Settings* → *Build*.
-
-**El orden importa y el paso 4 va al final.** Si dejas Workers Builds conectado, cada push
-dispara **dos** despliegues: el de GitHub, correcto, y el de Cloudflare, que publica un
-sitio **sin los PDF** porque ahí Chromium no arranca. El que llegue último gana, y sería
-una carrera. Desconéctalo en cuanto confirmes que el nuevo funciona.
-
-> Si algo sale mal y necesitas publicar ya: `npm run deploy` desde tu computador sigue
-> funcionando igual, con `npx wrangler login` en vez del token.
-
-**Si el paso «Publicar en Cloudflare» falla con `Authentication error [code: 10000]`:** el
-token es válido —wrangler alcanza a identificar la cuenta— pero le falta el permiso
-`Account · Workers Scripts · Edit`. Se arregla editando el token, sin cambiar el secret.
-
-Ojo con el señuelo: wrangler imprime después «Unable to get membership roles… Are you
-missing the `User->Memberships->Read` permission?». Eso es el diagnóstico de `whoami`
-quejándose de que no puede listar roles, **no la causa del fallo**. Añadir ese permiso no
-arregla nada.
-
-El workflow tiene `workflow_dispatch`, así que se relanza desde la pestaña Actions sin
-necesidad de inventar un commit.
-
 ### 1. La data real — es lo único que bloquea la fase 3
 
 **Toda la data es inventada excepto el esqueleto que diste.** Empresas, cargos y periodos
@@ -258,17 +221,51 @@ qué se decidió, nunca qué había dentro. Cámbialo por el real cuando lo nece
 plantilla está en `perfil.private.example.yml`, que sí se versiona porque documenta la
 forma y no lleva dato.
 
-### 3. Commitear y desplegar
+### 3. Confirmar que Workers Builds quedó desconectado
 
-Esta sesión no commiteó nada. `npm run verify` pasa en limpio, así que el repo está
-desplegable tal como está.
+Si sigue conectado, cada push dispara **dos** despliegues y el de Cloudflare publicaría un
+sitio **sin los PDF**, porque ahí Chromium no arranca. No se ha visto ese comportamiento
+—producción es correcta— pero conviene mirarlo una vez en el panel: tu Worker → *Settings*
+→ *Build*.
 
-### 4. Decidir el alias real del correo antes de que alguien lo lea
+### 4. Confirmar que `hola@santiagogelvez.com` recibe de verdad
 
-El PDF ya publica lo que diga `perfil.yml`, y hoy dice `ejemplo@santiagogelvez.com`. Ese
-valor **sí sale** en los cuatro PDF, así que deja de ser inofensivo en cuanto alguien
-descargue el CV. El alias real se decidía en la fase 7; conviene adelantarlo al momento en
-que el CV se empiece a compartir.
+Elegiste el alias durante la sesión y **ya está en producción**: el PDF que cualquiera
+descargue lo lleva impreso. Vale la pena mandarte un correo de prueba desde fuera y
+confirmar que aterriza donde esperas, porque a partir de ahora es la única vía de contacto
+que sale del sitio.
+
+Queda pendiente de la fase 7 lo demás del correo: el formulario, su proveedor y la política
+de datos.
+
+---
+
+### Desplegado y comprobado en producción
+
+El primer intento falló en el último paso —el token no tenía `Workers Scripts · Edit`— y
+**producción no se movió**, que es el comportamiento correcto: el pipeline verifica antes
+de publicar y no deja nada a medias. Con el permiso corregido, el segundo intento publicó.
+
+Comprobado en vivo, contra el sitio servido:
+
+```
+las 27 rutas del apex                → 200
+/cv/…-ES.pdf y …-EN.pdf              → 200 application/pdf  (145 KB y 152 KB)
+el correo en el HTML de las 27 rutas → 0 ocurrencias
+el correo en el texto del PDF        → presente (el ATS lo lee)
+el correo greppable en el binario    → no (va en el stream comprimido)
+el teléfono en el PDF público        → ausente
+/                                    → 301 hacia /es/
+www.santiagogelvez.com               → 301 hacia el apex
+/no-existe/                          → 404 con la página propia
+terceros en el HTML                  → ninguno (solo enlaces salientes)
+dig +short MX santiagogelvez.com     → 1 smtp.google.com  (correo intacto)
+```
+
+La comprobación del correo se rehízo con el alias real. La primera pasada buscaba
+`ejemplo@`, que ya no existía porque el alias cambió a `hola@` en mitad de la sesión: la
+prueba pasaba sin comprobar nada. Un invariante que busca el string equivocado es peor que
+no tenerlo, porque da confianza.
 
 ---
 
@@ -337,7 +334,7 @@ caso sin traducción está comprobado contra una pieza real.
 | ✅ 0 | Higiene y baja de la visualización | 2 | hecho |
 | ✅ 1 | Fundaciones: Astro, esquemas, rutas, deploy | 6-8 | hecho y desplegado |
 | ✅ 2 | Sistema de diseño | 6-8 | hecho y desplegado |
-| ◐ 3 | Data + CV + pipeline de PDF | 8-10 | mecanismo hecho; falta la data real |
+| ◐ 3 | Data + CV + pipeline de PDF | 8-10 | desplegado; falta la data real |
 | 4 | i18n de contenido y selector | 4-5 | 2 h × 2 |
 | 5 | Sistema de diagramas | 6-8 | 4 h + 2 h × 2 |
 | 6 | Contenido de lanzamiento (bilingüe) | 18-24 | 2 h × n |
