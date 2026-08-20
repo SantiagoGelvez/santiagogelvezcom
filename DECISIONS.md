@@ -7,6 +7,122 @@ Orden cronológico inverso — lo más reciente arriba.
 
 ---
 
+## ADR-0019 — `verify-routes.mjs` deriva las rutas del contenido y duplica el mapa de secciones a propósito
+
+**Fecha:** 2026-08-19
+
+**Decisión.** El script de verificación construye la lista de rutas esperadas leyendo
+`src/content/`, y la compara contra `dist/` **en los dos sentidos**: falla si falta una
+ruta y también si sobra. El mapa de secciones y la taxonomía siguen escritos a mano en
+el script, como espejo deliberado de `src/i18n/routes.ts` y `src/i18n/taxonomy.ts`.
+
+**Alternativas consideradas.** Importar los módulos reales desde el script, ahora que
+Node 24 ejecuta TypeScript sin transpilar. Emitir un manifiesto de rutas durante el
+build y verificar contra él.
+
+**Por qué.** Las rutas de contenido sí deben derivarse: eran la parte que envejecía,
+porque cada post nuevo obligaba a editar el script. El mapa de secciones es lo
+contrario: si el script importa `routes.ts`, deja de comprobar `routes.ts` y pasa a
+comprobar el build contra la misma fuente que lo generó. Un segmento mal editado
+—`/es/privacidad/` convertido en `/es/privacy/`— saldría verde. La duplicación es
+barata (ocho secciones y tres categorías que no crecen) y es justo lo que convierte al
+script en un segundo par de ojos. El manifiesto tiene el mismo defecto y además pide
+una integración propia, que ADR-0002 limitó a `mdx` y `sitemap`.
+
+**Qué se sacrificó.** Agregar una sección obliga a tocar tres archivos en vez de dos, y
+nada garantiza que el espejo se actualice: si alguien cambia `routes.ts` y no el script,
+el fallo aparece como una ruta que "sobra" y otra que "falta", con un mensaje que no
+dice de entrada que el espejo se desincronizó. Es ruidoso a propósito — falla del lado
+seguro.
+
+---
+
+## ADR-0018 — Los dígitos se permiten en los slugs de proyecto y se prohíben en los de post
+
+**Fecha:** 2026-08-19
+
+**Decisión.** El esquema aplica dos reglas de slug distintas: los posts no admiten
+dígitos, los proyectos sí. Resuelve una contradicción interna de SPEC §8, que prohíbe
+"fechas ni números" tres líneas después de poner `/es/proyectos/mundial-2026` como
+ejemplo de un slug bien hecho.
+
+**Alternativas consideradas.** Prohibir los dígitos en todas partes, que es la lectura
+literal de la regla, y renombrar el ejemplo a `mundial-de-futbol`. Permitirlos en todas
+partes y dejar la regla como una convención no verificada.
+
+**Por qué.** La regla trae su propio motivo: "una fecha en la URL envejece el post y me
+impide actualizarlo sin que se vea viejo". Ese motivo aplica a la fecha en que se
+escribió una pieza, no a un número que es parte del nombre de la cosa. En
+`mundial-2026` el 2026 no dice cuándo se escribió el caso de estudio: dice de qué
+mundial habla, y no envejece nunca. Prohibirlo en los posts sí conserva el motivo
+intacto, porque es ahí donde la tentación de poner el año es real.
+
+**Qué se sacrificó.** La regla deja de ser una sola frase y pasa a ser dos, con una
+excepción que hay que explicar cada vez. Y el esquema no puede distinguir un
+`mundial-2026` legítimo de un `retrospectiva-2026` que sí envejece: en proyectos, la
+regla vuelve a ser disciplina y no validación.
+
+---
+
+## ADR-0017 — Las fechas se validan como cadena, nunca como fecha de YAML
+
+**Fecha:** 2026-08-19
+
+**Decisión.** Todas las fechas del contenido y de la data se escriben entre comillas y
+se validan como texto: formato `YYYY-MM-DD` y, después, que la fecha exista en el
+calendario. El esquema **rechaza explícitamente** un valor que YAML ya haya convertido
+en `Date`, con un mensaje que explica por qué hay que ponerle comillas.
+
+**Alternativas consideradas.** Dejar que YAML las convierta y validarlas con
+`z.coerce.date()`, que es la forma corta y la que cualquiera escribiría.
+
+**Por qué.** Es el requisito que decidió el framework (ADR-0002): un error de tipeo en
+una fecha no debe llegar a producción. `z.coerce.date()` no lo cumple, y falla justo en
+el caso que importa. YAML 1.1 convierte una fecha sin comillas en un `Date` de
+JavaScript, y `Date` no rechaza los desbordes: los corrige. `2026-02-30` no explota,
+se vuelve el 2 de marzo, en silencio, y el build sale verde con la fecha equivocada.
+Validar la cadena antes de que nadie la interprete es lo único que atrapa ese caso.
+Está comprobado en los dos sentidos: la fecha imposible y la fecha sin comillas rompen
+el build.
+
+**Qué se sacrificó.** Las comillas son ruido en cada archivo de contenido, y son fáciles
+de olvidar; el precio de olvidarlas es un build roto, no un dato malo, pero es fricción
+real al escribir. Las fechas llegan a las plantillas como texto, así que ordenarlas o
+formatearlas por idioma pide una conversión explícita más adelante. Se ordenan
+lexicográficamente, que con `YYYY-MM-DD` da el orden correcto sin convertir nada.
+
+---
+
+## ADR-0016 — El registro de un proyecto y su narrativa viven en archivos distintos
+
+**Fecha:** 2026-08-19
+
+**Decisión.** Cada proyecto son tres archivos: un `.yml` con el registro —bilingüe en
+línea, como pide SPEC §6— y dos `.mdx` con el caso de estudio, uno por idioma,
+nombrados `<id>.es.mdx` y `<id>.en.mdx`. El `id` sale del nombre del archivo y **es** la
+clave de traducción, sin campo aparte.
+
+**Alternativas consideradas.** Un MDX por idioma con todo el frontmatter dentro, que es
+una colección en vez de dos y se lee de corrido.
+
+**Por qué.** SPEC §6 pide dos cosas que no caben en un archivo: que los proyectos sean
+un registro bilingüe en línea, y que el caso de estudio sea narrativa larga con las
+nueve secciones de §9. Con un MDX por idioma, todo lo que no es lingüístico —estado,
+stack, periodo, orden, destacado— queda duplicado y libre de divergir: un proyecto
+`activo` en español y `terminado` en inglés es un bug que ningún esquema ve, porque un
+esquema solo mira un archivo a la vez. Separándolos, ese dato existe una sola vez y la
+divergencia deja de ser posible en vez de quedar prohibida por disciplina.
+
+**Qué se sacrificó.** Escribir un proyecto ahora son tres archivos abiertos en vez de
+dos, y la relación entre ellos es una convención de nombres, no algo que el sistema de
+tipos garantice. La compensación es explícita: la capa de consulta exige los dos
+idiomas y rompe el build si falta uno, que es además donde se hace cumplir ADR-0008.
+También obligó a fijar el `generateId` del cargador: por defecto `glob()` usa el campo
+`slug` como id, y aquí `slug` es un objeto bilingüe, así que el id salía como
+`"[object Object]"`.
+
+---
+
 ## ADR-0015 — El `hreflang` se emite desde la clave de traducción, no desde la ruta
 
 **Fecha:** 2026-08-19

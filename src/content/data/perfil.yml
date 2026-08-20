@@ -1,0 +1,20 @@
+# Un solo registro, en forma de lista porque el cargador `file()` espera un
+# arreglo de objetos con `id`, no un objeto suelto.
+- id: santiago
+  nombre: Santiago Gelvez
+  headline:
+    es: Ingeniero de Datos
+    en: Data Engineer
+  resumen:
+    es: Resumen de relleno. El texto real se escribe en la fase 6.
+    en: Placeholder summary. The real text gets written in phase 6.
+  ciudad: Duitama
+  pais: Colombia
+  # Alias del dominio, rotable, nunca el correo principal de Workspace
+  # (ADR-0006). Este valor es un marcador: el alias real se decide en la fase 7,
+  # junto con la ofuscación, y no se versiona antes de esa decisión.
+  correo: ejemplo@santiagogelvez.com
+  enlaces:
+    github: https://github.com/SantiagoGelvez
+    # Marcador hasta la fase 3.
+    linkedin: https://www.linkedin.com/in/pendiente/

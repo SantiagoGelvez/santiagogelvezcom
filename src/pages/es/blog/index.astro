@@ -1,15 +1,31 @@
 ---
 import Base from '~/layouts/Base.astro';
-import PlaceholderNotice from '~/components/PlaceholderNotice.astro';
 import { path } from '~/i18n/routes';
 import { sectionLabels, pageDescriptions } from '~/i18n/ui';
-import { posts, topics, inLocale } from '~/data/placeholders';
+import { categorySlugs, categoryKeys, categoryLabels } from '~/i18n/taxonomy';
+import { postsIn, postsInCategory, assertReferencesResolve } from '~/lib/content';
 
 const locale = 'es' as const;
 const section = 'blog' as const;
 
-const entries = inLocale(posts, locale);
-const topicEntries = inLocale(topics, locale);
+// Las referencias entre colecciones se comprueban una vez por build, desde una
+// página que siempre existe. Si un post apunta a un proyecto inexistente, el
+// build se cae aquí en vez de dejar un enlace roto en producción.
+await assertReferencesResolve();
+
+const posts = await postsIn(locale);
+// Franja fija "empieza por aquí" (SPEC §9): a un post al mes, el índice
+// cronológico se ve lento; los pilares mantienen lo mejor visible.
+const pillars = posts.filter((post) => post.entry.data.pilar);
+
+const categories = await Promise.all(
+  categoryKeys.map(async (key) => ({
+    key,
+    href: path(locale, 'topic', categorySlugs[key][locale]),
+    label: categoryLabels[key][locale],
+    count: (await postsInCategory(locale, key)).length,
+  })),
+);
 ---
 
 <Base
@@ -21,18 +37,31 @@ const topicEntries = inLocale(topics, locale);
   alternates={{ es: path('es', section), en: path('en', section) }}
 >
   <h1>{sectionLabels[section][locale]}</h1>
-  <PlaceholderNotice locale={locale} />
+
+  {pillars.length > 0 && (
+    <section>
+      <h2>Empieza por aquí</h2>
+      <ul class="plain">
+        {pillars.map((post) => (
+          <li><a href={path(locale, section, post.slug)}>{post.entry.data.titulo}</a></li>
+        ))}
+      </ul>
+    </section>
+  )}
 
   <ul class="plain">
-    {entries.map(({ piece, slug }) => (
-      <li><a href={path(locale, section, slug)}>{piece.title[locale]}</a></li>
+    {posts.map((post) => (
+      <li>
+        <a href={path(locale, section, post.slug)}>{post.entry.data.titulo}</a>
+        <span class="meta"> · {categoryLabels[post.entry.data.categoria][locale]} · {post.entry.data.fecha_publicacion}</span>
+      </li>
     ))}
   </ul>
 
-  <h2>{sectionLabels.topic[locale]}</h2>
+  <h2>Temas</h2>
   <ul class="plain">
-    {topicEntries.map(({ piece, slug }) => (
-      <li><a href={path(locale, 'topic', slug)}>{piece.title[locale]}</a></li>
+    {categories.map((category) => (
+      <li><a href={category.href}>{category.label}</a> <span class="meta">({category.count})</span></li>
     ))}
   </ul>
 </Base>

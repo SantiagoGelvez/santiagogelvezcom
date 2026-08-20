@@ -17,9 +17,15 @@ interface Props {
    * `hreflang` solo se emite entre pares reales (SPEC §8).
    */
   alternates: Partial<Record<Locale, string>>;
+  /**
+   * `noindex` para páginas que existen pero todavía no merecen indexarse:
+   * las categorías con menos de 3 posts (ADR-0012). La página se construye y
+   * navega igual; lo único que cambia es la señal a los buscadores.
+   */
+  noindex?: boolean;
 }
 
-const { locale, section, title, description, canonical, alternates } = Astro.props;
+const { locale, section, title, description, canonical, alternates, noindex = false } = Astro.props;
 
 const site = Astro.site!;
 const isHome = section === 'home';
@@ -46,6 +52,7 @@ const xDefault = alternates['es'];
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{fullTitle}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#0F1219" />
     <link rel="canonical" href={new URL(canonical, site).href} />

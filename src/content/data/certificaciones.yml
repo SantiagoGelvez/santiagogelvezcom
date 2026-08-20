@@ -1,0 +1,14 @@
+- id: ejemplo-obtenida
+  nombre: Certificación de ejemplo
+  emisor: Emisor de ejemplo
+  estado: obtenida
+  obtencion: "2025-06-01"
+  vencimiento: "2028-06-01"
+  visible_en: [sitio, cv-datos]
+
+# El estado `en-curso` es deliberado: comunica trayectoria activa (SPEC §6).
+- id: ejemplo-en-curso
+  nombre: Certificación en curso de ejemplo
+  emisor: Emisor de ejemplo
+  estado: en-curso
+  visible_en: [sitio, cv-datos]

@@ -1,41 +1,51 @@
 ---
+import { render } from 'astro:content';
 import Base from '~/layouts/Base.astro';
-import PlaceholderNotice from '~/components/PlaceholderNotice.astro';
 import { path, otherLocale } from '~/i18n/routes';
-import { ui, pageDescriptions } from '~/i18n/ui';
-import { posts, inLocale, alternatePaths } from '~/data/placeholders';
+import { ui } from '~/i18n/ui';
+import { categoryLabels, categorySlugs } from '~/i18n/taxonomy';
+import { postsIn, postAlternates } from '~/lib/content';
 
-export function getStaticPaths() {
-  return inLocale(posts, 'es').map(({ piece, slug }) => ({
-    params: { slug },
-    props: { piece },
-  }));
+export async function getStaticPaths() {
+  const posts = await postsIn('es');
+  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
 }
 
 const locale = 'es' as const;
 const section = 'blog' as const;
 
-const { piece } = Astro.props;
-const slug = piece.slug[locale]!;
+const { post } = Astro.props;
+const { data } = post.entry;
+const { Content } = await render(post.entry);
+
+const alternates = await postAlternates(post.key);
 
 // Si la pieza no está traducida, el aviso va **en el otro idioma** y al inicio,
 // para que quien no lee este idioma lo decida en dos segundos (SPEC §8).
 const other = otherLocale(locale);
-const onlyInThisLanguage = piece.slug[other] === null;
+const onlyInThisLanguage = alternates[other] === undefined;
 ---
 
 <Base
   locale={locale}
   section={section}
-  title={piece.title[locale]}
-  description={pageDescriptions[section][locale]}
-  canonical={path(locale, section, slug)}
-  alternates={alternatePaths(piece, section)}
+  title={data.titulo}
+  description={data.resumen}
+  canonical={path(locale, section, post.slug)}
+  alternates={alternates}
 >
   {onlyInThisLanguage && (
     <p class="meta" lang={other}>{ui.noTranslation[other]}</p>
   )}
 
-  <h1>{piece.title[locale]}</h1>
-  <PlaceholderNotice locale={locale} />
+  <h1>{data.titulo}</h1>
+  <p class="meta">
+    <a href={path(locale, 'topic', categorySlugs[data.categoria][locale])}>
+      {categoryLabels[data.categoria][locale]}
+    </a>
+    {' · '}{data.fecha_publicacion}
+    {data.fecha_actualizacion && ` · ${data.fecha_actualizacion}`}
+  </p>
+
+  <Content />
 </Base>

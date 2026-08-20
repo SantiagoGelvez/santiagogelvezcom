@@ -1,0 +1,17 @@
+# Las dos variantes de ADR-0011. `filtro` es el valor de `visible_en` que
+# selecciona los registros de cada salida.
+- id: cv-datos
+  cargo_objetivo:
+    es: Ingeniero de Datos
+    en: Data Engineer
+  idioma: es
+  filtro: cv-datos
+  orden_secciones: [perfil, experiencia, proyectos, skills, certificaciones, educacion]
+
+- id: cv-itsm
+  cargo_objetivo:
+    es: Especialista ITSM
+    en: ITSM Specialist
+  idioma: es
+  filtro: cv-itsm
+  orden_secciones: [perfil, experiencia, certificaciones, skills, educacion]

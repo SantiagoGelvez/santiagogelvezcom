@@ -1,14 +1,14 @@
 ---
 import Base from '~/layouts/Base.astro';
-import PlaceholderNotice from '~/components/PlaceholderNotice.astro';
 import { path } from '~/i18n/routes';
 import { sectionLabels, pageDescriptions } from '~/i18n/ui';
-import { projects, inLocale } from '~/data/placeholders';
+import { projectsIn } from '~/lib/content';
 
 const locale = 'es' as const;
 const section = 'projects' as const;
 
-const entries = inLocale(projects, locale);
+// Tarjeta en el índice: título, una línea, stack, estado (SPEC §9).
+const projects = await projectsIn(locale);
 ---
 
 <Base
@@ -20,11 +20,14 @@ const entries = inLocale(projects, locale);
   alternates={{ es: path('es', section), en: path('en', section) }}
 >
   <h1>{sectionLabels[section][locale]}</h1>
-  <PlaceholderNotice locale={locale} />
 
   <ul class="plain">
-    {entries.map(({ piece, slug }) => (
-      <li><a href={path(locale, section, slug)}>{piece.title[locale]}</a></li>
+    {projects.map(({ record, slug }) => (
+      <li>
+        <a href={path(locale, section, slug)}>{record.entry.data.titulo[locale]}</a>
+        <p>{record.entry.data.resumen[locale]}</p>
+        <p class="meta">{record.entry.data.estado} · {record.entry.data.stack.join(' · ')}</p>
+      </li>
     ))}
   </ul>
 </Base>

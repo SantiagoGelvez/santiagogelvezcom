@@ -1,0 +1,23 @@
+# El nombre del archivo es el `id`, y el `id` es la clave de traducción
+# (SPEC §6, corolario). Lo no lingüístico vive una sola vez: no puede divergir
+# entre idiomas. Las fechas van entre comillas a propósito — ver `isoDate`.
+slug:
+  es: proyecto-de-ejemplo
+  en: sample-project
+titulo:
+  es: Proyecto de ejemplo
+  en: Sample project
+resumen:
+  es: Caso de estudio de relleno de la fase 1b. Sostiene las rutas de proyecto mientras se escribe el contenido real en la fase 6.
+  en: Placeholder case study from phase 1b. It holds up the project routes and the schema while the real content gets written in phase 6.
+rol:
+  es: Ingeniero de datos
+  en: Data engineer
+periodo:
+  inicio: "2026-08-01"
+estado: activo
+stack: [Astro, TypeScript, Cloudflare Workers]
+destacado: true
+orden: 1
+posts_relacionados: [ejemplo]
+visible_en: [sitio]

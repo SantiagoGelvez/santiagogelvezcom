@@ -1,32 +1,40 @@
 ---
+import { render } from 'astro:content';
 import Base from '~/layouts/Base.astro';
-import PlaceholderNotice from '~/components/PlaceholderNotice.astro';
 import { path } from '~/i18n/routes';
-import { pageDescriptions } from '~/i18n/ui';
-import { projects, inLocale, alternatePaths } from '~/data/placeholders';
+import { projectsIn, projectAlternates } from '~/lib/content';
 
-export function getStaticPaths() {
-  return inLocale(projects, 'en').map(({ piece, slug }) => ({
-    params: { slug },
-    props: { piece },
-  }));
+export async function getStaticPaths() {
+  const projects = await projectsIn('en');
+  return projects.map(({ record, slug }) => ({ params: { slug }, props: { record } }));
 }
 
 const locale = 'en' as const;
 const section = 'projects' as const;
 
-const { piece } = Astro.props;
-const slug = piece.slug[locale]!;
+const { record } = Astro.props;
+const { data } = record.entry;
+
+// El cuerpo narrativo vive en su propio archivo por idioma; los metadatos, una
+// sola vez en el registro. Los proyectos son bilingües en línea, así que el
+// selector siempre tiene a dónde ir (ADR-0008).
+const { Content } = await render(record.body[locale]);
 ---
 
 <Base
   locale={locale}
   section={section}
-  title={piece.title[locale]}
-  description={pageDescriptions[section][locale]}
-  canonical={path(locale, section, slug)}
-  alternates={alternatePaths(piece, section)}
+  title={data.titulo[locale]}
+  description={data.resumen[locale]}
+  canonical={path(locale, section, data.slug[locale])}
+  alternates={projectAlternates(record)}
 >
-  <h1>{piece.title[locale]}</h1>
-  <PlaceholderNotice locale={locale} />
+  <h1>{data.titulo[locale]}</h1>
+  <p class="meta">
+    {data.rol[locale]} · {data.estado} · {data.periodo.inicio}{data.periodo.fin && ` — ${data.periodo.fin}`}
+  </p>
+  <p class="meta">{data.stack.join(' · ')}</p>
+  {data.repo && <p><a href={data.repo}>{data.repo}</a></p>}
+
+  <Content />
 </Base>

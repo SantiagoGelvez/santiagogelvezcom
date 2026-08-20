@@ -7,103 +7,125 @@ Estado del repositorio y siguiente paso. Se actualiza al final de cada sesión.
 ## Estado actual
 
 **Fecha:** 2026-08-19
-**Última sesión:** Fase 1a — fundaciones (scaffold, i18n, rutas) y corte de S3 a Workers
-**Estado del repo:** desplegado y en producción. `npm run verify` pasa en limpio.
+**Última sesión:** Apagado de la URL `workers.dev` y fase 1b — esquemas de contenido
+**Estado del repo:** desplegado y en producción. `npm run verify` pasa en limpio y
+`astro check` sale con 0 errores, 0 avisos y 0 hints.
 `git@github.com:SantiagoGelvez/santiagogelvezcom.git` · rama `main` · público.
-**Producción sirve el sitio de Astro desde Cloudflare Workers.** S3 ya no recibe
-tráfico; el bucket sigue en pie solo como rollback.
-**Fase del proyecto:** 0 y 1a completadas. Siguiente: fase 1b (esquemas de contenido).
+**Fase del proyecto:** 0 y 1 completas. Siguiente: fase 2 (sistema de diseño).
 
 ```
 santiagogelvezcom/
 ├── CLAUDE.md              Se carga solo en cada sesión. Índice + reglas permanentes
 ├── NEXT.md                Este archivo — dónde vamos
-├── DECISIONS.md           15 ADR registrados — por qué está así
+├── DECISIONS.md           19 ADR registrados — por qué está así
 ├── docs/SPEC.md           Especificación completa — qué construir
 ├── astro.config.mjs       Estático, i18n con prefijo explícito, mdx + sitemap
-├── wrangler.jsonc         Worker de solo assets: sin `main`, sin código de servidor
+├── wrangler.jsonc         Worker de solo assets, sin `main` y sin URL workers.dev
 ├── src/
+│   ├── content.config.ts  Esquemas Zod de las 9 colecciones. El corazón de la fase 1b
+│   ├── content/
+│   │   ├── posts/{es,en}/   Un archivo por idioma; el par lo hace clave_traduccion
+│   │   ├── projects/        Registro bilingüe por proyecto (.yml)
+│   │   ├── project-bodies/  Narrativa por idioma: <id>.es.mdx / <id>.en.mdx
+│   │   └── data/            perfil, experiencia, educación, certificaciones,
+│   │                        skills, variantes de CV — todo con datos de ejemplo
+│   ├── lib/content.ts     Capa de consulta: lo que un esquema no puede ver
+│   ├── lib/slugs.ts       Reglas de slug de SPEC §8, compartidas
 │   ├── i18n/routes.ts     Clave de traducción → segmento por idioma. `path()`
+│   ├── i18n/taxonomy.ts   Las tres categorías fijas + umbral de ADR-0012
 │   ├── i18n/ui.ts         Cadenas de interfaz y `meta description` por sección
-│   ├── data/placeholders.ts  Piezas de relleno — las reemplaza la fase 1b
-│   ├── layouts/Base.astro    `<head>`, nav, selector de idioma, JSON-LD
-│   └── pages/{es,en}/     20 rutas, un archivo por ruta (ADR-0014)
-├── public/robots.txt      Con puntero al sitemap
+│   ├── layouts/Base.astro `<head>`, nav, selector de idioma, JSON-LD, `noindex`
+│   └── pages/{es,en}/     Un archivo por ruta (ADR-0014)
 ├── public/_redirects      La raíz responde 301 hacia /es/
-└── scripts/verify-routes.mjs  Criterio de terminado de la fase 1a, ejecutable
+└── scripts/verify-routes.mjs  Criterio de terminado, ejecutable
 ```
 
 ---
 
 ## Qué quedó hecho
 
-- **Scaffold de Astro 7.2.4** con TypeScript estricto (`astro/tsconfigs/strictest`),
-  versiones fijas sin rangos, integraciones limitadas a `mdx` y `sitemap` (ADR-0002).
-  `astro check` sale con 0 errores, 0 avisos y 0 hints.
-- **i18n con prefijo explícito** `/es/` y `/en/`, sin detección del idioma del
-  navegador. La raíz responde **301 real** hacia `/es/` desde `public/_redirects`, no
-  un meta-refresh generado en build.
-- **Las 21 rutas existen y responden 200**, verificadas contra el runtime real de
-  Workers con `wrangler dev`, no solo contra `dist/`. Son 21 y no 20 porque se agregó
-  desde ya una pieza que solo existe en español: el caso crítico de SPEC §8 conviene
-  tenerlo construido antes de que haya contenido que migrar.
-- **Selector de idioma resuelto por clave de traducción**, no por manipulación de la
-  URL. Desde la pieza sin traducir lleva al índice del blog del otro idioma, con el
-  aviso escrito **en ese otro idioma**, y nunca desaparece ni se desactiva.
-- **`hreflang` solo entre pares que existen** (ADR-0015), `canonical` en todas las
-  páginas, `x-default` hacia la versión en español, JSON-LD `Person` con `@id` estable
-  compartido entre `/es/` y `/en/`, y `meta description` escritas a mano por sección.
-- **`404.html` servido por Cloudflare** vía `not_found_handling`, con `noindex`.
-- **`scripts/verify-routes.mjs`**: convierte el criterio de terminado en algo que se
-  corre. Comprueba las 21 rutas, un solo `h1` por página, `canonical`, el patrón del
-  `<title>`, el largo de las `meta description`, que ningún `hreflang` apunte a una
-  página inexistente, que no haya fuentes del CDN de Google, y que la pieza sin
-  traducción **no** haya generado una página fantasma en inglés.
-- Dos ADR nuevos: **ADR-0014** (estructura de rutas) y **ADR-0015** (`hreflang` desde
-  la clave de traducción). Total: 15.
+### La URL `workers.dev` está apagada
 
-**Una restricción de versiones que conviene recordar.** TypeScript va fijado en 5.9.3
-aunque 7.0.2 ya es estable: `@astrojs/check` declara `^5 || ^6` como peer. No es un
-problema hoy, pero es lo que hay que revisar en la actualización trimestral antes de
-subir TypeScript.
+El sitio ya no está duplicado en `santiagogelvezcom.santiagogelvez.workers.dev`: esa
+dirección responde ahora el error 1042 de Cloudflare y la petición **no llega al
+Worker**. Comprobado en producción después de desplegar, junto con lo que no debía
+moverse:
+
+```
+las 27 rutas del apex             → 200
+/                                 → 301 hacia /es/
+www.santiagogelvez.com            → 301 hacia el apex
+/no-existe/                       → 404 con la página propia y noindex
+workers.dev                       → error 1042, no sirve nada
+dig +short MX santiagogelvez.com  → 1 smtp.google.com  (correo intacto)
+```
+
+`preview_urls` ya viene en `false` por defecto en wrangler 4.124.0, así que
+`workers_dev` solo era suficiente. **Ojo con esto al hacer el pendiente 1 de abajo:**
+las previews por rama son URLs `workers.dev`, así que habrá que poner
+`"preview_urls": true` explícitamente cuando se conecte el repositorio.
+
+### Fase 1b: los esquemas
+
+Nueve colecciones con esquemas Zod, y `src/data/placeholders.ts` eliminado. Lo que
+importa no es que existan, sino qué rompe el build ahora — todo esto está comprobado:
+
+| Si alguien escribe… | …pasa esto |
+|---|---|
+| `fecha: "2026-02-30"` | falla: "esa fecha no existe en el calendario" |
+| `fecha: 2026-08-19` sin comillas | falla: YAML la volvería `Date` y corregiría los desbordes en silencio (ADR-0017) |
+| `categoria: tutoriales` | falla: solo existen las tres de SPEC §9 |
+| `proyecto: no-existe` en un post | falla: la referencia no resuelve |
+| `posts_relacionados: [no-existe]` | falla: la referencia no resuelve |
+| un `telefono:` en un archivo versionado | falla: clave no reconocida (ADR-0006) |
+| un caso de estudio sin su par en inglés | falla: ADR-0008 exige los dos idiomas |
+| dos posts del mismo idioma con la misma clave | falla: el selector quedaría ambiguo |
+
+Y lo demás que quedó en pie:
+
+- **Los dos ejes de filtrado de SPEC §6**, no uno solo. El de registro es `visible_en[]`
+  (`sitio`, `cv-datos`, `cv-itsm`). El de campo **no** es una marca booleana: es el
+  `z.strictObject` de cada esquema junto con ADR-0006 — los campos no públicos viven en
+  archivos ignorados por git, así que un dato privado no es un campo mal marcado sino
+  una clave que el esquema no reconoce. Una marca se puede leer mal; un archivo que no
+  está en el repo no se puede publicar por accidente.
+- **La regla de ADR-0012 conectada al conteo real**, y evaluada **por idioma**: hoy
+  `/es/blog/tema/fundamentos/` tiene 3 posts y se indexa, y las otras cinco categorías
+  salen con `noindex`. Los dos sentidos de la regla están ejercitados a propósito.
+- **Las tres categorías fijas existen en los dos idiomas**: 6 páginas donde antes había
+  2 de relleno. Las rutas pasaron de 21 a 27.
+- **Los borradores no generan página.** Hay un post en estado `borrador` en el
+  contenido justamente para que el verificador lo demuestre en cada build.
+- **`verify-routes.mjs` deriva las rutas del contenido** y compara en los dos sentidos:
+  falla si falta una ruta y también **si sobra**, que es lo que atrapa un borrador
+  filtrado. El caso crítico de SPEC §8 —la pieza sin traducción que no puede generar
+  página fantasma— ya no está escrito a mano: sale de las claves de traducción.
+
+Cuatro ADR nuevos: **0016** (registro y narrativa en archivos distintos), **0017**
+(fechas como cadena), **0018** (dígitos en slugs, que resuelve una contradicción interna
+de SPEC §8 y obligó a actualizar la spec) y **0019** (el verificador duplica el mapa de
+rutas a propósito). Total: 19.
+
+**Una dependencia nueva:** `js-yaml` 4.3.1, fijada, solo para el script de verificación.
+No entra al sitio ni al build desplegado.
 
 ---
 
 ## Pendientes para mí (Santiago)
 
-**El corte de S3 a Workers está hecho y verificado en vivo** (2026-08-19):
+1. **Conectar el repositorio en el panel de Cloudflare** para que el despliegue salga de
+   `git push`, con previews por rama. Hoy el deploy es manual con `npm run deploy`.
+   Requiere agregar `"preview_urls": true` a `wrangler.jsonc` — ver arriba.
 
-```
-/                                   → 301 hacia /es/
-www.santiagogelvez.com              → 301 hacia el apex
-las 21 rutas                        → 200
-/no-existe/                         → 404 con la página propia
-cabeceras de respuesta              → sin x-amz-*: S3 salió del camino
-dig +short MX santiagogelvez.com    → 1 smtp.google.com  (correo intacto)
-canonical y hreflang                → correctos en producción
-```
+2. **Desmontar AWS.** El bucket sigue en pie como rollback del corte. Cuando lleve unos
+   días estable: vaciarlo, borrarlo y revisar que no quede nada más facturando. Ese era
+   el punto de mudarse (SPEC §4). **El build nunca vuelve a subir a S3.**
 
-Quedan tres cosas, ninguna urgente:
+3. **Decidir si el sitio declara disponibilidad explícita** ("abierto a oportunidades").
+   Es una decisión con consecuencias laborales, no de copy. Se necesita en la fase 6.
 
-1. **Apagar la URL `workers.dev`.** El sitio completo está duplicado en
-   `santiagogelvezcom.<subdominio>.workers.dev`. El `canonical` absoluto contiene el
-   daño, pero lo limpio es que esa URL no sirva nada: se agrega `"workers_dev": false`
-   a `wrangler.jsonc` y se despliega. Es un cambio de producción, así que va aparte.
-
-2. **Conectar el repositorio en el panel de Cloudflare** para que el despliegue salga
-   de `git push`, con previews por rama. Hoy el deploy es manual con `npm run deploy`.
-
-3. **Desmontar AWS, sin prisa.** El bucket sigue en pie a propósito: es el rollback
-   mientras el corte se asienta. Cuando lleve unos días estable, vaciarlo, borrarlo y
-   revisar que no quede nada más facturando. Ese era el punto de mudarse (SPEC §4).
-   **El build nunca vuelve a subir a S3.**
-
-**Aparte del corte, no bloqueantes:**
-
-- **Decidir si el sitio declara disponibilidad explícita** ("abierto a oportunidades").
-  Es una decisión con consecuencias laborales, no de copy. Se necesita en la fase 6.
-- **Fecha objetivo de publicación**, si hay una postulación o certificación que la
-  ancle. Cambia qué se recorta.
+4. **Fecha objetivo de publicación**, si hay una postulación o certificación que la
+   ancle. Cambia qué se recorta.
 
 ---
 
@@ -111,28 +133,35 @@ Quedan tres cosas, ninguna urgente:
 
 - **La cabecera no se comporta bien en móvil.** Es `flex` con `margin-left: auto` en el
   selector de idioma; al envolverse en pantallas angostas el selector queda mal ubicado.
-  No se arregla ahora a propósito: los estilos de la fase 1a son provisionales y la
-  fase 2 los reemplaza enteros. Arreglarlos dos veces es trabajo tirado.
+  No se arregla ahora a propósito: los estilos son provisionales y **la fase 2 los
+  reemplaza enteros**. Arreglarlos dos veces es trabajo tirado.
+
+- **Todo el contenido es de ejemplo, y la data del CV también.** `perfil.yml` lleva un
+  correo marcador (`ejemplo@santiagogelvez.com`) y un LinkedIn marcador; la experiencia,
+  la educación y las certificaciones son registros inventados. Es deliberado: la data
+  real entra con el pipeline del CV en la fase 3, y el alias de correo real se decide en
+  la fase 7 junto con la ofuscación. **Nada de esto debe llegar a producción como está**
+  — hoy no hace daño porque las páginas que lo mostrarían (`/cv/`, `/sobre-mi/`) siguen
+  siendo de relleno y no leen las colecciones todavía.
 
 ---
 
-## Siguiente sesión: fase 1b — esquemas de contenido (bloque de 4 h)
+## Siguiente sesión: fase 2 — sistema de diseño (bloque de 4 h)
 
-La fase 1a dejó las rutas en pie con datos de relleno en un archivo TypeScript suelto.
-Falta lo que hizo que Astro ganara el ADR-0002: la validación por esquema en build.
+Las fundaciones están completas y verificadas. Lo que falta ahora no es estructura sino
+la dirección de SPEC §13, que hoy está representada por unos estilos provisionales que
+el propio archivo declara desechables.
 
-1. Colecciones de contenido con esquemas Zod: `glob()` para los MDX de blog y
-   proyectos, `file()` para la data estructurada del perfil (SPEC §6).
-2. Reemplazar `src/data/placeholders.ts` por las colecciones reales, conservando la
-   clave de traducción y el slug por idioma — la forma ya está pensada para eso.
-3. Los dos ejes de filtrado de SPEC §6, no uno solo.
-4. Conectar la regla de ADR-0012: `noindex` en categorías con menos de 3 posts,
-   evaluado contra el conteo real en build.
-5. Extender `verify-routes.mjs` para que derive las rutas esperadas de las
-   colecciones, en vez de tenerlas escritas a mano.
+1. Tokens: escala tipográfica, espaciado, color, y la firma visual de SPEC §13.
+2. Reemplazar los estilos globales de `Base.astro`, incluida la cabecera que hoy se
+   rompe en móvil.
+3. Componentes que el contenido ya pide y no existen: tarjeta de proyecto, entrada del
+   índice del blog, chips de stack, aviso de pieza sin traducir.
+4. El piso de calidad de SPEC §13 es no negociable: contraste, foco visible, y que
+   `verify` siga en verde.
 
-**Terminado cuando:** un error de tipeo en una fecha rompe el build, y las rutas siguen
-saliendo verdes en `npm run verify`.
+**Terminado cuando:** el sitio se ve como una decisión de diseño y no como HTML sin
+estilo, en móvil y en escritorio, sin una sola fuente del CDN de Google.
 
 ---
 
@@ -141,7 +170,7 @@ saliendo verdes en `npm run verify`.
 | # | Fase | Horas | Formato |
 |---|---|---|---|
 | ✅ 0 | Higiene y baja de la visualización | 2 | hecho |
-| ◐ 1 | Fundaciones: Astro, esquemas, rutas, deploy | 6-8 | 1a hecha y desplegada; falta 1b |
+| ✅ 1 | Fundaciones: Astro, esquemas, rutas, deploy | 6-8 | hecho y desplegado |
 | 2 | Sistema de diseño | 6-8 | 4 h + 2 h × 2 |
 | 3 | Data + CV + pipeline de PDF | 8-10 | 2-3 × 4 h |
 | 4 | i18n de contenido y selector | 4-5 | 2 h × 2 |
@@ -149,7 +178,7 @@ saliendo verdes en `npm run verify`.
 | 6 | Contenido de lanzamiento (bilingüe) | 18-24 | 2 h × n |
 | 7 | SEO, privacidad, cierre | 4-5 | 2 h × 2 |
 
-**Total restante: 48-64 h.** La fase 6 conviene solaparla con las fases 4, 5 y 7 en
+**Total restante: 46-60 h.** La fase 6 conviene solaparla con las fases 4, 5 y 7 en
 lugar de dejarla al final en bloque.
 
 ---
@@ -159,5 +188,9 @@ lugar de dejarla al final en bloque.
 - **Actualización de Astro: trimestral.** Es la mitigación acordada en ADR-0002 por
   haber elegido un framework con historial de versiones mayores frecuentes. Si se deja
   acumular, una actualización se come una sesión entera.
-  Próxima revisión: **2026-11**. Punto a revisar entonces: TypeScript sigue fijado
-  en 5.9.3 porque `@astrojs/check` no soporta la 7 todavía.
+  Próxima revisión: **2026-11**. Puntos a revisar entonces:
+  - TypeScript sigue fijado en 5.9.3 porque `@astrojs/check` declara `^5 || ^6` como
+    peer y todavía no soporta la 7.
+  - `import { z } from 'astro:content'` quedó deprecado en Astro 7; el proyecto ya usa
+    `astro/zod`, que es el reemplazo. No hay nada pendiente, pero conviene confirmar que
+    sigue siendo la ruta recomendada.

@@ -1,0 +1,14 @@
+# Sin niveles, sin porcentajes, sin barras de progreso (SPEC §6). El esquema no
+# tiene dónde ponerlos, así que no se pueden agregar por descuido.
+- id: python
+  nombre: Python
+  categoria: lenguajes
+  visible_en: [sitio, cv-datos, cv-itsm]
+- id: sql
+  nombre: SQL
+  categoria: lenguajes
+  visible_en: [sitio, cv-datos, cv-itsm]
+- id: airflow
+  nombre: Airflow
+  categoria: orquestacion
+  visible_en: [sitio, cv-datos]

@@ -231,7 +231,8 @@ Un slug en español posiciona en búsquedas en español. Reutilizar el inglés d
 ### Reglas de slug
 
 - Minúsculas, ASCII, guiones. Sin tildes; `ñ` → `n`.
-- Sin fechas ni números. Una fecha en la URL envejece el post y me impide actualizarlo sin que se vea viejo.
+- **En posts, sin fechas ni números** — el esquema los rechaza. Una fecha en la URL envejece el post y me impide actualizarlo sin que se vea viejo.
+- **En proyectos, los dígitos se permiten** cuando son parte del nombre de la cosa (`mundial-2026`), que es lo que hacía contradictorio el ejemplo de arriba. Ver ADR-0018.
 - Cortos y descriptivos: `etl-vs-elt`, no `diferencias-entre-etl-y-elt-explicadas`.
 - **Permanentes.** Si uno cambia, se registra una redirección. Crea el archivo de redirecciones desde el día uno, aunque nazca vacío.
 

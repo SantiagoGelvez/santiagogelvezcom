@@ -1,0 +1,8 @@
+- id: ejemplo-pregrado
+  institucion: Institución de ejemplo
+  titulo:
+    es: Título de ejemplo
+    en: Sample degree
+  inicio: "2018-01-01"
+  fin: "2022-12-31"
+  visible_en: [sitio, cv-datos, cv-itsm]

@@ -1,0 +1,39 @@
+# Registros de ejemplo. La trayectoria real entra en la fase 3, con el pipeline
+# del CV. Nada de nombres de clientes, compañeros ni cifras internas.
+- id: ejemplo-actual
+  empresa: Empresa de ejemplo
+  cargo:
+    es: Ingeniero de datos
+    en: Data engineer
+  inicio: "2025-01-01"
+  modalidad: remoto
+  descripcion:
+    es: Registro de ejemplo, sin fecha de fin, para ejercitar el caso "empleo actual".
+    en: Sample record with no end date, to exercise the "current job" case.
+  logros:
+    es:
+      - Viñeta de ejemplo.
+    en:
+      - Sample bullet.
+  stack: [Python, SQL]
+  # Primer eje de filtrado (SPEC §6): en qué salidas aparece este registro.
+  visible_en: [sitio, cv-datos, cv-itsm]
+
+- id: ejemplo-anterior
+  empresa: Otra empresa de ejemplo
+  cargo:
+    es: Analista de datos
+    en: Data analyst
+  inicio: "2023-01-01"
+  fin: "2024-12-31"
+  modalidad: hibrido
+  descripcion:
+    es: Registro de ejemplo que solo aparece en el CV de ITSM, no en el sitio.
+    en: Sample record that only shows up in the ITSM CV, not on the site.
+  logros:
+    es:
+      - Viñeta de ejemplo.
+    en:
+      - Sample bullet.
+  stack: [SQL]
+  visible_en: [cv-itsm]
