@@ -189,6 +189,23 @@ const projectBodies = defineCollection({
 
 /* -------------------------------------------------------------------- data */
 
+/**
+ * Normaliza para comparar dos textos por lo que dicen y no por cómo se
+ * escribieron: sin acentos, sin puntuación y sin dobles espacios. Sin esto, la
+ * comprobación de abajo se esquiva cambiando una coma.
+ */
+const saidTheSame = (a: string, b: string): boolean => {
+  const flatten = (value: string) =>
+    value
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  const [x, y] = [flatten(a), flatten(b)];
+  return x === y || x.includes(y) || y.includes(x);
+};
+
 const profile = defineCollection({
   loader: file('src/content/data/perfil.yml'),
   schema: z
@@ -196,7 +213,23 @@ const profile = defineCollection({
       id: z.string(),
       nombre: z.string().min(1),
       headline: bilingual(z.string().min(1)),
-      resumen: bilingual(z.string().min(1)),
+      /**
+       * `intro` y `resumen` **no son el mismo texto en dos longitudes**: son dos
+       * textos para dos lectores, y por eso son dos campos.
+       *
+       * - `intro` la lee alguien que llegó a la portada, no sabe quién eres y
+       *   tiene cinco segundos. Necesita orientación, no densidad. El tope de
+       *   180 caracteres es la restricción hecha estructura: sin él vuelve a
+       *   crecer hasta ser un párrafo, que es exactamente de donde venimos.
+       * - `resumen` la lee un reclutador que ya abrió el CV, y la parsea un ATS.
+       *   Ahí la densidad de palabras clave es un activo y la brevedad un
+       *   desperdicio, así que el mínimo es alto y el techo es la media página.
+       *
+       * `intro` **nunca** entra al CV: `cvView` devuelve un perfil que no la
+       * incluye, así que no puede filtrarse a un PDF por descuido.
+       */
+      intro: bilingual(z.string().min(1).max(180)),
+      resumen: bilingual(z.string().min(200).max(700)),
       ciudad: z.string().min(1),
       pais: z.string().min(1),
       /** Alias del dominio, rotable. Nunca el correo principal (ADR-0006). */
@@ -218,6 +251,26 @@ const profile = defineCollection({
        */
       enlaces: z
         .strictObject({ github: z.url(), linkedin: z.url().optional(), platzi: z.url().optional() }),
+    })
+    /**
+     * Que sean dos campos no garantiza que digan dos cosas. Esta es la mitad
+     * que lo hace verdad: si la portada y el CV vuelven a decir lo mismo, el
+     * build se cae aquí en vez de publicarlo. Se comprueba por idioma porque el
+     * español y el inglés se escriben por separado y pueden divergir uno a uno.
+     */
+    .superRefine((data, ctx) => {
+      for (const locale of locales) {
+        if (saidTheSame(data.intro[locale], data.resumen[locale])) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['intro', locale],
+            message:
+              `\`intro\` y \`resumen\` dicen lo mismo en "${locale}". La portada orienta a quien no te ` +
+              'conoce; el resumen del CV convence a quien ya lo abrió. Si el mismo texto sirve para los ' +
+              'dos, uno de los dos está mal escrito.',
+          });
+        }
+      }
     }),
 });
 

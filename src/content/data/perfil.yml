@@ -1,9 +1,9 @@
 # Un solo registro, en forma de lista porque el cargador `file()` espera un
 # arreglo de objetos con `id`, no un objeto suelto.
 #
-# ⚠ El `resumen` es provisional (fase 3): dice lo correcto sobre la trayectoria
-# real, pero el texto definitivo se escribe en la fase 6 junto con el resto del
-# contenido de lanzamiento.
+# ⚠ `intro` y `resumen` son provisionales (fase 3): dicen lo correcto sobre la
+# trayectoria real, pero los textos definitivos se escriben en la fase 6 junto
+# con el resto del contenido de lanzamiento.
 - id: santiago
   nombre: Santiago Gelvez
   # SPEC §7: el titular dice "Ingeniero de Datos" / "Data Engineer" y nada más.
@@ -13,9 +13,23 @@
   headline:
     es: Ingeniero de Datos
     en: Data Engineer
+  # Dos lectores, dos textos. No es el mismo párrafo en dos longitudes, y el
+  # esquema falla el build si vuelven a decir lo mismo.
+  #
+  # `intro` → solo la portada. La lee alguien que no sabe quién eres y que
+  # decide en cinco segundos si sigue leyendo. Orienta: qué haces y qué va a
+  # encontrar aquí. El tope de 180 caracteres del esquema es deliberado — es lo
+  # que impide que vuelva a crecer hasta ser el párrafo denso que era.
+  intro:
+    es: "Diseño pipelines y modelos analíticos. Aquí están los proyectos con su arquitectura, las decisiones que costaron y lo que se sacrificó en cada una."
+    en: "I design data pipelines and analytical models. Here are the projects with their architecture, the decisions that were expensive, and what each one traded away."
+  # `resumen` → la sección Perfil del CV y, por tanto, los cuatro PDF. La lee un
+  # reclutador que ya abrió el documento, y la parsea un ATS. Aquí la densidad de
+  # palabras clave es un activo y la brevedad un desperdicio: nombra el stack, el
+  # recorrido y el criterio. Nunca aparece en la portada.
   resumen:
-    es: "Ingeniero electrónico que llegó a los datos por el camino largo: ingesta y orquestación primero, dos años construyendo servicios en producción después. Diseño pipelines y modelos analíticos, y documento por qué cada arquitectura quedó como quedó."
-    en: "An electronic engineer who came to data the long way around: ingestion and orchestration first, then two years building production services. I design pipelines and analytical models, and I document why each architecture ended up the way it did."
+    es: "Ingeniero electrónico de la UPTC que llegó a los datos por el camino largo. Empecé construyendo pipelines de ingesta en Python y orquestando cargas diarias con Airflow sobre PostgreSQL; seguí dos años desarrollando servicios de operación en TypeScript y Python, donde aprendí a diseñar los contratos de API como fuente de datos analíticos y no solo como respuesta de pantalla. Mi trabajo más reciente es un lakehouse con arquitectura medallion en PySpark, Delta Lake y Unity Catalog. Documento cada decisión de arquitectura con sus trade-offs, porque un sistema se mantiene por las razones que quedaron escritas, no por el diagrama."
+    en: "An electronic engineer from UPTC who came to data the long way around. I started building Python ingestion pipelines and orchestrating daily loads with Airflow on PostgreSQL; then spent two years developing operations services in TypeScript and Python, where I learned to design API contracts as an analytical data source rather than just a screen response. My most recent work is a medallion-architecture lakehouse in PySpark, Delta Lake, and Unity Catalog. I document every architectural decision with its trade-offs, because a system is maintained through the reasons that got written down, not through the diagram."
   ciudad: Duitama
   pais: Colombia
   # Alias del dominio, rotable, nunca el correo principal de Workspace

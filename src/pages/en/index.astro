@@ -14,6 +14,12 @@ const section = 'home' as const;
 // Portada, no embudo (SPEC §13): quién soy, tres proyectos, últimos posts y
 // contacto. Todo alcanzable con poco scroll y sin una sola llamada a la acción
 // de landing.
+//
+// El héroe usa `intro` y **no** `resumen`. Eran el mismo campo, y por tanto el
+// mismo texto literal que la sección Perfil del CV: un párrafo denso escrito
+// para un reclutador que ya abrió el documento, puesto delante de alguien que
+// todavía no sabe quién eres. Aquí la densidad no informa, satura. `cvView` ni
+// siquiera devuelve `intro`, así que los dos textos no pueden volver a fundirse.
 const profile = await profileData();
 const projects = await featuredProjects(locale);
 const posts = await latestPosts(locale);
@@ -30,7 +36,17 @@ const posts = await latestPosts(locale);
   <Section as="div">
     <p class="kicker">{ui.role[locale]} · {ui.city[locale]}</p>
     <h1>{profile.nombre}</h1>
-    <p class="lead">{profile.resumen[locale]}</p>
+    <p class="lead">{profile.intro[locale]}</p>
+    {/*
+      La otra mitad del problema: la portada y el CV decían lo mismo y aun así
+      no se enlazaban. Esta línea es el enlace, en la misma mono de los
+      metadatos y sin botón, porque orienta — no persigue una conversión.
+    */}
+    <p class="more">
+      <a href={path(locale, 'projects')}>{ui.homeToProjects[locale]}</a>
+      {' · '}
+      <a href={path(locale, 'cv')}>{ui.homeToCv[locale]}</a>
+    </p>
     <PlaceholderNotice locale={locale} variant="copy" />
   </Section>
 

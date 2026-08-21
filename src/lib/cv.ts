@@ -204,7 +204,14 @@ export interface CvView {
   /** Ruta del PDF público de esta salida. El completo no tiene ruta. */
   pdf: string;
   updated: string;
-  profile: Awaited<ReturnType<typeof profileData>>;
+  /**
+   * El perfil **sin `intro`**, y ese `Omit` es la mitad estructural de la
+   * separación entre la portada y el CV. `intro` está escrita para quien no te
+   * conoce y llega a la portada; en un PDF que un reclutador ya abrió no aporta
+   * nada y desplaza al resumen. Dejarla fuera de la vista significa que no hay
+   * forma de renderizarla en el CV por descuido: la plantilla no la tiene.
+   */
+  profile: Omit<Awaited<ReturnType<typeof profileData>>, 'intro'>;
   experience: Experience[];
   education: Education[];
   certifications: Certification[];
@@ -238,7 +245,7 @@ export async function cvView(variantId: VariantId, locale: Locale): Promise<CvVi
   const filtro = variant.filtro;
   const visible = <T extends { visible_en: readonly string[] }>(item: T) => item.visible_en.includes(filtro);
 
-  const [profile, experience, education, certifications, skills, projects] = await Promise.all([
+  const [fullProfile, experience, education, certifications, skills, projects] = await Promise.all([
     profileData(),
     getCollection('experience'),
     getCollection('education'),
@@ -306,6 +313,10 @@ export async function cvView(variantId: VariantId, locale: Locale): Promise<CvVi
   }
 
   const cargoObjetivo = variant.cargo_objetivo[locale];
+
+  // La portada no entra al CV. Se descarta aquí, en la capa de consulta, y no
+  // se omite en la plantilla: una omisión se puede olvidar de hacer.
+  const { intro: _intro, ...profile } = fullProfile;
 
   return {
     variant: variantId,

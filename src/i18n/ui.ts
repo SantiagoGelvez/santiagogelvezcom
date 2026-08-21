@@ -50,6 +50,25 @@ export const ui = {
     es: 'El texto de esta página es de relleno. El contenido real llega con la data y el contenido de lanzamiento.',
     en: 'The copy on this page is placeholder text. The real content lands with the data and the launch content.',
   },
+  /**
+   * Los dos enlaces de orientación del héroe de la portada, debajo de la
+   * `intro`. Existen porque la portada y el CV decían lo mismo y aun así no se
+   * enlazaban: el único camino de uno al otro era el nav.
+   *
+   * Cada texto de enlace **describe su destino y se lee solo**, fuera de la
+   * frase que lo rodea. No es un tecnicismo de accesibilidad: es lo que hace que
+   * la línea siga siendo útil para quien navega saltando de enlace en enlace.
+   * Por eso no son un botón ni una llamada a la acción — SPEC §13 dice portada,
+   * no embudo.
+   */
+  homeToProjects: {
+    es: 'Cómo trabajo, en los casos de estudio',
+    en: 'How I work, in the case studies',
+  },
+  homeToCv: {
+    es: 'La trayectoria completa y el CV en PDF',
+    en: 'The full career and the CV as a PDF',
+  },
   /** Franja fija del índice del blog (SPEC §9). */
   startHere: { es: 'Empieza por aquí', en: 'Start here' },
   featuredProjects: { es: 'Proyectos', en: 'Projects' },

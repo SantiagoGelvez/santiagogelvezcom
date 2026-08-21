@@ -7,12 +7,14 @@ Estado del repositorio y siguiente paso. Se actualiza al final de cada sesión.
 ## Estado actual
 
 **Fecha:** 2026-08-20
-**Última sesión:** Imágenes en el contenido y su visor a tamaño completo (ADR-0031). Antes,
-en la misma fecha: fase 3 — el CV navegable, el pipeline de los cuatro PDF, la prueba ATS,
-sacar los datos de contacto del HTML y mudar el despliegue a GitHub Actions
-**Estado del repo:** limpio y desplegable; **lo de las imágenes todavía no se ha empujado**.
-`npm run verify` pasa (27 rutas, 4 archivos de soporte, 2 PDF, 1 imagen fuente → 9 servidas,
-70 kB) y `astro check` sale con 0 errores, 0 avisos y 0 hints.
+**Última sesión:** Separar el texto de la portada del resumen del CV (ADR-0032). Antes, en
+la misma fecha: imágenes en el contenido y su visor a tamaño completo (ADR-0031), y la
+fase 3 — el CV navegable, el pipeline de los cuatro PDF, la prueba ATS, sacar los datos de
+contacto del HTML y mudar el despliegue a GitHub Actions
+**Estado del repo:** desplegable, con **lo de ADR-0032 sin commitear**. Lo de las imágenes
+sí está empujado (`6a7b386`). `npm run verify` pasa (27 rutas, 4 archivos de soporte, 4 PDF
+del CV, 2 imágenes fuente → 17 servidas, 757 kB) y `astro check` sale con 0 errores, 0
+avisos y 0 hints.
 `git@github.com:SantiagoGelvez/santiagogelvezcom.git` · rama `main` · público.
 **Fase del proyecto:** 0, 1, 2 completas. Fase 3 **completa en mecanismo**; le falta la
 data real, que es trabajo de Santiago y no de ingeniería (ver pendientes).
@@ -25,7 +27,7 @@ nueva está **probada de punta a punta**: el robot instaló Chromium, generó lo
 santiagogelvezcom/
 ├── CLAUDE.md              Se carga solo en cada sesión. Índice + reglas permanentes
 ├── NEXT.md                Este archivo — dónde vamos
-├── DECISIONS.md           30 ADR registrados — por qué está así
+├── DECISIONS.md           32 ADR registrados — por qué está así
 ├── docs/SPEC.md           Especificación completa — qué construir
 ├── .github/workflows/     El despliegue: construye, genera los PDF y publica (ADR-0030)
 ├── public/fonts/          Las cuatro .woff2 del sistema + la OFL (ADR-0022)
@@ -49,6 +51,43 @@ santiagogelvezcom/
 ---
 
 ## Qué quedó hecho
+
+### La portada dejó de ser el CV con otro tipo de letra
+
+Salió de una observación tuya: la portada y el CV decían exactamente lo mismo, la portada
+se saturaba, y los dos sitios no se enlazaban. Las tres cosas eran el mismo defecto —
+`perfil.resumen` se renderizaba en `pages/{es,en}/index.astro` **y** en `CvDocument.astro`,
+el mismo string literal.
+
+Un campo con dos trabajos que tiran en direcciones opuestas: la portada la lee alguien que
+no sabe quién eres y tiene cinco segundos, el CV lo lee un reclutador que ya lo abrió y lo
+parsea un ATS. Lo caro no era la repetición sino que **no estaba optimizado para ninguno
+de los dos**. Ahora son dos campos, `intro` y `resumen`, con **ADR-0032** detrás.
+
+Lo que impide que se vuelvan a fundir, y las tres se probaron rompiéndolas a propósito:
+
+| | |
+|---|---|
+| `intro` y `resumen` dicen lo mismo → **falla el build** | la comparación normaliza acentos, mayúsculas y puntuación, y rechaza que uno contenga al otro |
+| `intro` pasa de 180 caracteres → **falla el build** | es lo que impide que vuelva a crecer hasta ser el párrafo denso que era |
+| `cvView` devuelve el perfil **sin `intro`** | la plantilla del CV no tiene el campo, así que no puede renderizarlo por descuido |
+
+Comprobado sobre la salida real y no sobre el código:
+
+```
+la intro en dist/es/index.html            → 1     el resumen en la portada     → 0
+la intro en dist/es/cv/index.html         → 0     el resumen en el CV          → 1
+la intro en cualquier otra ruta del sitio → 0     el resumen en el PDF         → sí
+la intro en el texto del PDF              → no    el PDF sigue en 2 páginas    → sí
+```
+
+Y la mitad que no era de datos: el héroe gana **una línea con dos enlaces** —a los proyectos
+y al CV— en la mono de los metadatos, sin botón. Antes el único camino de la portada al CV
+era el nav, que es lo que hacía que se sintieran «dos sitios no conectados». Cada texto de
+enlace describe su destino y se lee solo, fuera de la frase que lo rodea.
+
+**Los dos textos siguen siendo provisionales** (fase 6), igual que lo era el resumen
+anterior. Lo que quedó fijo es la forma y el invariante, no lo que dicen.
 
 ### Las imágenes entran, y el ancho deja de ser el problema
 
@@ -276,7 +315,7 @@ con `⚠ DATA PROVISIONAL` en cada archivo.
 | `educacion.yml` | UPTC, Ingeniería Electrónica, grado 2018 | La fecha de inicio real |
 | `certificaciones.yml` | AWS DEA + Databricks, inventadas | Cuáles tienes de verdad, con su ID |
 | `skills.yml` | 19 registros plausibles | Podarlo a lo que defiendas en entrevista |
-| `perfil.yml` | Resumen provisional, correo marcador | El resumen real (fase 6), el alias (fase 7) |
+| `perfil.yml` | `intro` y `resumen` provisionales, correo marcador | Los dos textos reales (fase 6), el alias (fase 7). Ojo: son **dos lectores distintos**, y el esquema falla si dicen lo mismo (ADR-0032) |
 
 Al reescribirlo, las reglas permanentes: nada de nombres de clientes ni de compañeros, y
 ninguna cifra interna de El Tiempo, Tigo o Solvo. Y después de tocar la data, **corre
@@ -371,6 +410,9 @@ no tenerlo, porque da confianza.
   342 × 194. Ahí el enlace de la leyenda es mejor que el visor, porque abre el visor propio
   del navegador y ese sí permite pellizcar. Es una salida real, no un consuelo, pero conviene
   saber que la mejor experiencia en móvil es la del fallback.
+- **`intro` y `resumen` se pueden desincronizar sin que nada avise.** El esquema detecta
+  que digan lo mismo; no puede detectar que uno se quedó viejo. Al reescribir la
+  trayectoria en la fase 6 hay que tocar los dos, en los dos idiomas — cuatro cadenas.
 - **Los defectos de la fase 2 siguen abiertos** y no se tocaron: el post duplicado en el
   índice del blog, la mitad de la ventana vacía en pantallas anchas, los chips del stack
   en el cuerpo del caso de estudio, la ausencia de modo claro y la franja "empieza por

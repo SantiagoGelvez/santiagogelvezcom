@@ -7,6 +7,78 @@ Orden cronológico inverso — lo más reciente arriba.
 
 ---
 
+## ADR-0032 — La portada y el CV son dos textos, no dos longitudes del mismo
+
+**Fecha:** 2026-08-20
+
+**Decisión.** `perfil.yml` se parte en dos campos de prosa con lectores distintos:
+
+- **`intro`** — solo la portada. Tope de **180 caracteres** en el esquema.
+- **`resumen`** — solo la sección *Perfil* del CV, y por tanto los cuatro PDF. Entre
+  **200 y 700** caracteres.
+
+Y tres cosas que impiden que vuelvan a fundirse:
+
+- El esquema **falla el build si dicen lo mismo**, por idioma. La comparación normaliza
+  —quita acentos, puntuación, mayúsculas y espacios dobles— y también rechaza que uno
+  contenga al otro, así que no se esquiva cambiando una coma.
+- **`cvView` devuelve el perfil sin `intro`** (`Omit<…, 'intro'>`). La plantilla del CV no
+  tiene el campo, así que no hay forma de renderizarlo por descuido.
+- El héroe de la portada gana **una línea de dos enlaces** —a los proyectos y al CV— en la
+  mono de los metadatos, sin botón.
+
+**El problema.** Los dos sitios renderizaban `profile.resumen[locale]`: el mismo string,
+literal, en `pages/{es,en}/index.astro` y en `CvDocument.astro`. Un campo con dos trabajos
+que tiran en direcciones opuestas.
+
+| | Quién lee | Qué necesita |
+|---|---|---|
+| Portada | Alguien que no sabe quién eres y tiene cinco segundos | Orientación. La densidad satura |
+| CV y PDF | Un reclutador que ya abrió el documento; un parser ATS | Palabras clave, stack, recorrido |
+
+Lo caro no era la repetición, era que **no estaba optimizado para ninguno de los dos**:
+demasiado denso para la portada, demasiado flaco para el CV. Un texto que sirve igual de
+bien para el desconocido y para el reclutador no es eficiente, es que no está escrito para
+nadie.
+
+**Alternativas consideradas.**
+
+- **Dejarlo en un campo y acortarlo.** Arregla la portada y empeora el CV: el resumen del
+  CV es el bloque con más densidad de palabras clave del documento y es lo primero que lee
+  el parser. Recortarlo para que quepa en un héroe es pagar el CV con la portada.
+- **El texto de la portada como copia de página en `i18n/ui.ts`.** Separación limpia por
+  destino y `perfil.yml` intacto como fuente única del CV. Se descartó por una razón de
+  escritura, no de arquitectura: en la fase 6 los dos textos se escriben a la vez, y en el
+  mismo archivo el contraste entre ellos está a la vista. En dos archivos hay que ir a
+  buscarlo — y **la comprobación de que no dicen lo mismo sería imposible**, porque un
+  esquema de contenido no puede ver un módulo de TypeScript. Esa comprobación es la mitad
+  que hace la decisión verdad en vez de intención.
+
+**Qué se sacrificó.**
+
+- **Hay dos textos que mantener en dos idiomas: cuatro cadenas donde antes había dos.** Se
+  desincronizan si la trayectoria cambia y solo se actualiza uno. El esquema detecta que
+  digan lo mismo; **no puede detectar que uno se quedó viejo.**
+- **El tope de 180 caracteres es un número elegido, no derivado.** Cabe en dos líneas a la
+  medida de lectura del sitio y es la restricción que impide que la `intro` vuelva a crecer
+  hasta ser un párrafo. Si algún día el texto real necesita 190, hay que cambiar el esquema
+  a propósito — y ese es exactamente el punto: que cueste una decisión y no un descuido.
+- **La comparación normalizada puede dar un falso positivo.** Si la `intro` real llegara a
+  ser una frase que aparece literal dentro del `resumen`, el build se cae aunque el resto
+  del resumen diga otra cosa. Se acepta: el falso positivo se arregla reescribiendo una
+  frase, y el falso negativo —publicar otra vez el mismo párrafo en dos sitios— es
+  justamente lo que esta decisión existe para impedir.
+- **La línea de enlaces del héroe es contenido que no viene de la data.** Vive en
+  `i18n/ui.ts` como dos cadenas, así que la portada tiene ahora dos orígenes de texto. Es el
+  precio de conectar la portada con el CV sin inventar un campo de data para dos enlaces.
+
+**Nota de contenido, no de arquitectura.** Los dos textos que quedan escritos siguen siendo
+**provisionales** (fase 6), como lo era el `resumen` anterior. Lo que esta decisión fija es
+la forma y el invariante; qué dicen exactamente lo escribe Santiago con el resto del
+contenido de lanzamiento.
+
+---
+
 ## ADR-0031 — Las imágenes se abren en el *top layer*, no se sangran
 
 **Fecha:** 2026-08-20
